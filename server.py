@@ -32,6 +32,7 @@ class Server:
                     break
             print('Request received:\n{}'.format(request))
             conn.send(response)
+            print('Response: {}'.format(response))
             conn.close()
             print('Connection closed')
 

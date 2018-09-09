@@ -4,8 +4,8 @@ from http import HTTPStatus
 import os
 
 class StaticHandler(BaseHTTPRequestHandler):
-    def __init__(self, request, client_address, server, static_dir='/home/alea/bicycle/www'):
-        self.static_dir = static_dir
+    def __init__(self, request, client_address, server):
+        self.static_dir = os.environ['BI_STATIC_DIR']
         super().__init__(request, client_address, server)
 
     def do_GET(self):
@@ -45,7 +45,3 @@ class StaticHandler(BaseHTTPRequestHandler):
         self.send_header('Content-length', length)
         self.end_headers()
         self.wfile.write(content)
-
-    def exists(self, path):
-        
-        return path in html + js

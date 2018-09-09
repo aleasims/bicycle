@@ -1,7 +1,6 @@
 from http.server import HTTPServer
 from core.static_handler import StaticHandler
-import web_server
-
+import core.web_server as web_server
 
 def old_main():
     address = (HOST, PORT) = ('', 8080)

@@ -1,5 +1,6 @@
 from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
+from core.routes import routes
 
 class MasterHandler(BaseHTTPRequestHandler):
     def handle(self):

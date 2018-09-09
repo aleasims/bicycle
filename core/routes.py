@@ -1,5 +1,5 @@
 routes = {
-    'apps': {'/api': 'app'},
+    'apps': {'/app': 'app.py'},
     'static': {
         'html': {
             # Values MUST NOT start with '/'

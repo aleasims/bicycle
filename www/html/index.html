@@ -1,0 +1,25 @@
+<html>
+  <head>
+    <title>SyncMessage</title>
+  </head>
+  <body bgcolor=white>
+    <h1>SyncMessage</h1>
+
+    <h2>Home</h2>
+
+    To a <a href="reg">registration</a> page.
+
+    <p id="test-field"></p>
+    <script type="text/javascript">
+      var test = new XMLHttpRequest();
+      test.onreadystatechange = function() {
+        if(this.readyState == 4 && this.status == 200) {
+          document.getElementById("test-field").innerHTML = test.responseText;
+        }
+      };
+      test.open("GET", "chat-api", true);
+      //test.send()
+    </script>
+
+  </body>
+</html>

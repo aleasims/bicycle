@@ -3,8 +3,9 @@ Web chat with crypto encapsulation
 
 ## Running
 Starts on Python 3.x
+Запускает локальный тестовый сервер 127.0.0.1:8080
 ```
-python server.py
+python bicycle.py
 ```
 
 ## Текущее видение

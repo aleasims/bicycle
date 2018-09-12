@@ -1,19 +1,26 @@
-from http.server import HTTPServer
-from core.static_handler import StaticHandler
-import web_server
+import sys
+import os
+# terrible style
+sys.path.append(os.environ['BC_DIR'])
+
+import subprocess
+
+MODULES = ['db_manager']
 
 
-def old_main():
-    address = (HOST, PORT) = ('', 8080)
-    server = HTTPServer(address, StaticHandler)
-    print('Listening on {}:{}...'.format(HOST, PORT))
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        print('\nServer is shutting')
+CHILD_PROCESSES = []
+
 
 def main():
-    web_server.main()
+    for module in MODULES:
+        arg = '_'.join([module, 'start.py'])
+        full_arg = '/'.join(['core', arg])
+        args = ['python3', full_arg]
+        CHILD_PROCESSES.append(subprocess.Popen(args))
+
+    for proc in CHILD_PROCESSES:
+        proc.poll()
+
 
 if __name__ == '__main__':
     main()

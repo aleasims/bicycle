@@ -3,12 +3,12 @@ import os
 sys.path.insert(0, os.path.join(os.environ['BC_DIR'], 'core'))
 
 from web.web_server import WebServer
-from common import configure_logger
+from common import configure_logger, load_config
 
 
 def main():
-    logger = configure_logger('WebServer')
-    config = {}
+    config = load_config('web_server.json')
+    logger = configure_logger(config['name'])
     WebServer(config, logger).start()
 
 

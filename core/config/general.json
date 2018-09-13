@@ -1,0 +1,7 @@
+{
+	"python_version": 3.6,
+	"run_dir": "core/run",
+	"modules": [
+		"db_manager"
+	]
+}

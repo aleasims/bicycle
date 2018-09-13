@@ -1,4 +1,6 @@
 import logging
+import os
+import json
 
 
 def configure_logger(name):
@@ -15,3 +17,9 @@ def configure_logger(name):
     logger.addHandler(ch)
 
     return logger
+
+
+def load_config(file_name):
+    config_dir = os.path.join(os.environ['BC_DIR'], 'core/config')
+    path = os.path.join(config_dir, file_name)
+    return json.load(open(path))

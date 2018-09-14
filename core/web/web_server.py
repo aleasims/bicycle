@@ -1,10 +1,10 @@
 from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
-from core.routes import routes
+from core.web.routes import routes
 
 class MasterHandler(BaseHTTPRequestHandler):
     def handle(self):
-        pass
+        
 
 
 def main():

@@ -1,5 +1,5 @@
 from http.server import BaseHTTPRequestHandler
-from core.routes import routes
+from core.web.routes import routes
 from http import HTTPStatus
 import os
 

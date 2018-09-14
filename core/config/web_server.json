@@ -1,0 +1,5 @@
+{
+	"name": "WebServer",
+	"host": "localhost",
+	"port": 9999
+}

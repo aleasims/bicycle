@@ -7,8 +7,8 @@ class StaticHandler(BaseHTTPRequestHandler):
     html = list(routes['static']['html'].keys())
     js = list(routes['static']['js'].keys())
 
-    def __init__(self, request, client_address, server, static_dir='/home/alea/bicycle/www'):
-        self.static_dir = os.environ['BI_STATIC_DIR']
+    def __init__(self, request, client_address, server, static_dir='www'):
+        self.static_dir = static_dir
         super().__init__(request, client_address, server)
 
     def do_GET(self):

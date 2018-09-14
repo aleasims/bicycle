@@ -1,6 +1,5 @@
 import sys
 import os
-sys.path.insert(0, os.environ['BC_DIR'])
 
 from core.web.web_server import WebServer
 from core.common import configure_logger, load_config

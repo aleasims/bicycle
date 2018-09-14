@@ -2,7 +2,6 @@ import logging
 import os
 import json
 
-
 def configure_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)
@@ -20,6 +19,5 @@ def configure_logger(name):
 
 
 def load_config(file_name):
-    config_dir = os.path.join(os.environ['BC_DIR'], 'core/config')
-    path = os.path.join(config_dir, file_name)
+    path = os.path.join("core", "config", file_name)
     return json.load(open(path))

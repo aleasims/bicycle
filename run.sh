@@ -26,4 +26,4 @@ then
 fi
 
 
-$PYTHON bicycle.py
+$PYTHON -B bicycle.py

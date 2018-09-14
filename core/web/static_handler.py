@@ -4,7 +4,10 @@ from http import HTTPStatus
 import os
 
 class StaticHandler(BaseHTTPRequestHandler):
-    def __init__(self, request, client_address, server):
+    html = list(routes['static']['html'].keys())
+    js = list(routes['static']['js'].keys())
+
+    def __init__(self, request, client_address, server, static_dir='/home/alea/bicycle/www'):
         self.static_dir = os.environ['BI_STATIC_DIR']
         super().__init__(request, client_address, server)
 
@@ -12,18 +15,15 @@ class StaticHandler(BaseHTTPRequestHandler):
         self.response()
         
     def response(self):
-        html = list(routes['static']['html'].keys())
-        js = list(routes['static']['js'].keys())
-
         status = HTTPStatus.NOT_FOUND
         content_type = 'text/plain'
         local_path = None
-        if self.path in html + js:
+        if self.path in self.html + self.js:
             status = HTTPStatus.OK
-            if self.path in js:
+            if self.path in self.js:
                 local_path = os.path.join(self.static_dir, 'js', routes['static']['js'][self.path])
                 content_type = 'text/javascript'
-            if self.path in html:
+            if self.path in self.html:
                 local_path = os.path.join(self.static_dir, 'html', routes['static']['html'][self.path])
                 content_type = 'text/html'
 

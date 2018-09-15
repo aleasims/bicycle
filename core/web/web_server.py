@@ -24,8 +24,8 @@ class WebServer(HTTPServer):
 
     class MasterHandler(BaseHTTPRequestHandler):
         def __init__(self, request, client_address, server, config, logger):
-            super().__init__(request, client_address, server)
             self.config, self.logger = config, logger
+            super().__init__(request, client_address, server)
 
         def handle_one_request(self):
             super().handle_one_request()

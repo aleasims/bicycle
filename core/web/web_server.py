@@ -9,8 +9,8 @@ from http.server import HTTPServer
 class WebServer(HTTPServer):
     # it's possible not use static variables for logger nad config by overriding Base_server.finish_request
     def __init__(self, config, logger):
-        WebServer.config = config
-        WebServer.logger = logger
+        self.config = config
+        self.logger = logger
         self.host = config["host"]
         self.port = config["port"]
         super().__init__((self.host, self.port), self.MasterHandler)
@@ -20,11 +20,11 @@ class WebServer(HTTPServer):
         super().serve_forever()
 
     def finish_request(self, request, client_address):
-        self.MasterHandler(request, client_address, self, self.config, self.logger)
+        self.MasterHandler(request, client_address, self, self.logger)
 
     class MasterHandler(BaseHTTPRequestHandler):
-        def __init__(self, request, client_address, server, config, logger):
-            self.config, self.logger = config, logger
+        def __init__(self, request, client_address, server,logger):
+            self.logger = logger
             super().__init__(request, client_address, server)
 
         def handle_one_request(self):

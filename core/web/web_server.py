@@ -30,13 +30,11 @@ class WebServer(HTTPServer):
         def handle_one_request(self):
             super().handle_one_request()
             if (self.path in list(routes["apps"].keys())):
-                if (WebServer.logger is not None):
-                    WebServer.logger.info("Handle request by AppHandler")
-                AppHandler(self.request, self.client_address, self.server)
+                WebServer.logger.info("Handle request by AppHandler")
+                AppHandler(self.request, self.client_address, self.server, self.logger)
             else:
-                if (WebServer.logger is not None):
-                    WebServer.logger.info("Handle request by StaticHandler")
-                StaticHandler(self.request, self.client_address, self.server)
+                WebServer.logger.info("Handle request by StaticHandler")
+                StaticHandler(self.request, self.client_address, self.server, self.logger)
         
         def send_error(self, code, message=None, explain=None):
             if code==HTTPStatus.NOT_IMPLEMENTED:

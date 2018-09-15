@@ -30,10 +30,10 @@ class WebServer(HTTPServer):
         def handle_one_request(self):
             super().handle_one_request()
             if (self.path in list(routes["apps"].keys())):
-                WebServer.logger.info("Handle request by AppHandler")
+                self.logger.info("Handle request by AppHandler")
                 AppHandler(self.request, self.client_address, self.server, self.logger)
             else:
-                WebServer.logger.info("Handle request by StaticHandler")
+                self.logger.info("Handle request by StaticHandler")
                 StaticHandler(self.request, self.client_address, self.server, self.logger)
         
         def send_error(self, code, message=None, explain=None):

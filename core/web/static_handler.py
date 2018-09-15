@@ -7,11 +7,13 @@ class StaticHandler(BaseHTTPRequestHandler):
     html = list(routes['static']['html'].keys())
     js = list(routes['static']['js'].keys())
 
-    def __init__(self, request, client_address, server, static_dir='www'):
+    def __init__(self, request, client_address, server, logger, static_dir='www'):
         self.static_dir = static_dir
+        self.logger = logger
         super().__init__(request, client_address, server)
 
     def do_GET(self):
+        self.logger.info('GET command proceeded')
         self.response()
         
     def response(self):

@@ -29,6 +29,7 @@ class WebServer(HTTPServer):
 
         def handle_one_request(self):
             super().handle_one_request()
+            self.logger.info("Handle new request: {}".format(self.request)) 
             if (self.path in list(routes["apps"].keys())):
                 self.logger.info("Handle request by AppHandler")
                 AppHandler(self.request, self.client_address, self.server, self.logger)

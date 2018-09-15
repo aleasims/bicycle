@@ -26,8 +26,6 @@ class WebServer(HTTPServer):
         def __init__(self, request, client_address, server, config, logger):
             super().__init__(request, client_address, server)
             self.config, self.logger = config, logger
-            self.appHandler = AppHandler(self.request, self.client_address, self.server)
-            self.staticHandler = StaticHandler(self.request, self.client_address, self.server)
 
         def handle_one_request(self):
             super().handle_one_request()

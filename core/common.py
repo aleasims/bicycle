@@ -1,6 +1,7 @@
 import logging
 import os
 import json
+import sys
 
 
 def configure_logger(name):
@@ -20,6 +21,6 @@ def configure_logger(name):
 
 
 def load_config(file_name):
-    config_dir = os.path.join(os.environ['BC_DIR'], 'core/config')
+    config_dir = os.path.join(sys.path[0], 'config')
     path = os.path.join(config_dir, file_name)
     return json.load(open(path))

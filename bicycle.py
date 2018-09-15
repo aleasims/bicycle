@@ -11,8 +11,8 @@ CHILD_PROCESSES = []
 def register_signal_handler(signum):
     def handler(signum, frame):
         for proc in CHILD_PROCESSES:
-            proc.terminate()
-        sys.exit(signum)
+            proc.send_signal(signum)
+        signal.SIG_DFL
     signal.signal(signum, handler)
 
 
@@ -20,7 +20,7 @@ def start_modules(config):
     python_version = config['python_version']
     python = ''.join(['python', str(python_version)])
 
-    run_dir = os.path.join(os.environ['BC_DIR'], config['run_dir'])
+    run_dir = os.path.join(sys.path[0], 'run')
     modules = config['modules']
 
     for module in modules:
@@ -29,7 +29,6 @@ def start_modules(config):
         CHILD_PROCESSES.append(subprocess.Popen(args))
 
     for proc in CHILD_PROCESSES:
-        # To hang on this main process
         proc.wait()
 
 

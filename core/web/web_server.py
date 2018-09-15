@@ -7,9 +7,7 @@ from http import HTTPStatus
 from http.server import HTTPServer
 
 class WebServer(HTTPServer):
-    config = None
-    logger = None
-
+    # it's possible not use static variables for logger nad config by overriding Base_server.finish_request
     def __init__(self, config, logger):
         WebServer.config = config
         WebServer.logger = logger
@@ -21,9 +19,13 @@ class WebServer(HTTPServer):
         self.logger.info('Web server started')
         super().serve_forever()
 
+    def finish_request(self, request, client_address):
+        self.MasterHandler(request, client_address, self, self.config, self.logger)
+
     class MasterHandler(BaseHTTPRequestHandler):
-        def __init__(self, request, client_address, server):
+        def __init__(self, request, client_address, server, config, logger):
             super().__init__(request, client_address, server)
+            self.config, self.logger = config, logger
             self.appHandler = AppHandler(self.request, self.client_address, self.server)
             self.staticHandler = StaticHandler(self.request, self.client_address, self.server)
 

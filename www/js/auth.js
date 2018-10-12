@@ -1,3 +1,4 @@
+alert("Hello!")
 function submitNickname(){
     var approvemsg = "You are logged in.";
     var emptynickmsg = "Please, enter nickname. Use latin letters and digits."

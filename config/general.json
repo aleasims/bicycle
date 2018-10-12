@@ -1,6 +1,6 @@
 {
 	"python_version": 3.6,
 	"modules": [
-		"db_manager"
+		"web_server"
 	]
 }

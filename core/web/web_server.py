@@ -1,17 +1,21 @@
 from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
 from core.web.routes import routes
-
-class MasterHandler(BaseHTTPRequestHandler):
-    def handle(self):
-        
+from core.web.handler import Handler
 
 
-def main():
-    HOST, PORT = "localhost", 9999
-    server = TCPServer((HOST, PORT), MasterHandler)
-    server.serve_forever()
+class WebServer:
+    def __init__(self, config, logger):
+        self.logger = logger
+        self.config = config
 
-if __name__ == "__main__":
-    main()
-
+    def start(self):
+        HOST, PORT = "localhost", 8000
+        TCPServer.allow_reuse_adress = True
+        self.server = TCPServer((HOST, PORT), Handler)
+        try:
+            self.server.serve_forever()
+        except KeyboardInterrupt:
+            self.logger.info('Server stopping')
+        finally:
+            self.server.server_close()

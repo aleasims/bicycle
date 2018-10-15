@@ -10,9 +10,11 @@ class WebServer:
         self.config = config
 
     def start(self):
-        HOST, PORT = "localhost", 8000
-        TCPServer.allow_reuse_adress = True
+        HOST, PORT = self.config['host'], self.config['port']
+        TCPServer.allow_reuse_address = True
+        self.logger.info('Starting server on {}:{}'.format(HOST, PORT))
         self.server = TCPServer((HOST, PORT), Handler)
+        Handler.logger = self.logger
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:

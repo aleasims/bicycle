@@ -1,3 +1,5 @@
 {
-	"name": "WebServer"
+	"name": "WebServer",
+	"host": "",
+	"port": 8080
 }

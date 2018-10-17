@@ -15,7 +15,8 @@ function submitNickname(){
                 regform.style.display = "none";
             }
         };
-        xhttp.open("POST", "reg.html", true);
-        xhttp.send(nickname);
+        xhttp.open("POST", "register", true);
+        xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+        xhttp.send(`name=${nickname}`);
     }
 }

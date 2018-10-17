@@ -4,16 +4,25 @@ from core.web import app_handler
 
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
+        self.base_handle()
+
+    def do_POST(self):
+        if self.headers['Content-length'] is None:
+            self.wfile.write(b'HTTP/1.1 400')
+        self.input = self.rfile.read(int(self.headers['Content-length']))
+        self.base_handle()
+
+    def base_handle(self):
         args = self.prepare_args()
         response = app_handler.LaunchApp(args)
         self.wfile.write(response)
         self.log(response)
 
-    def do_POST(self):
-        pass
-
     def prepare_args(self):
-        return {'path': self.path}
+        args = {'path': self.path}
+        if getattr(self, 'input', None) is not None:
+            args['input'] = self.input 
+        return args
 
     def log(self, response):
         code = response.decode('utf-8').split('\r\n', 1)[0].split(' ', 1)[1]

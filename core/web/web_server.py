@@ -19,5 +19,3 @@ class WebServer:
             self.server.serve_forever()
         except KeyboardInterrupt:
             self.logger.info('Server stopping')
-        finally:
-            self.server.server_close()

@@ -3,7 +3,7 @@ routes = {
     # Direct paths point to appname
     '/login': 'login',
     '/static': 'static',
-    '/register': 'register'
+    '/register': 'register',
     '/': '/home',
     '/home': '/static?file=html/index.html',
     '/reg': '/static?file=html/reg.html',

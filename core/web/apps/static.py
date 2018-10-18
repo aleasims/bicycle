@@ -11,8 +11,12 @@ def activate(args):
     local_path = sys.path[0] + '/www/' + page_path
     if not os.path.exists(local_path):
         return b'HTTP/1.1 404'
-    f = open(local_path)
-    buf = f.read()
+    try:
+        f = open(local_path)
+        buf = f.read()
+    except Exception as e:
+        return b'HTTP/1.1 404'
+
     response = 'HTTP/1.1 200 OK'
 
     content_type = 'text/plain'

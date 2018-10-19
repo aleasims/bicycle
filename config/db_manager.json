@@ -1,4 +1,7 @@
 {
-	"name": "DBManager",
-	"period": 2
+    "name": "DBManager",
+    "storage_path": "/tmp/bc_db",
+    "ipc_path": "/tmp/bc_ipc",
+    "backlog": 5,
+    "socket_timeout": 2
 }

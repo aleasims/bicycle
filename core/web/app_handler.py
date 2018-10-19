@@ -9,7 +9,7 @@ def LaunchApp(args):
     try:
         path = args['path']
     except KeyError:
-        return
+        return ERROR_RESPONSE
 
     path = urllib.parse.urlparse(path)[2]
 
@@ -24,4 +24,6 @@ def LaunchApp(args):
         app = importlib.import_module('core.web.apps.' + appname)
         response = app.activate(args)
 
+    if response is None:
+        return ERROR_RESPONSE
     return response

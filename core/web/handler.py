@@ -8,7 +8,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         if self.headers['Content-length'] is None:
-            self.wfile.write(b'HTTP/1.1 400')
+            self.wfile.write(b'HTTP/1.1 411')
         self.input = self.rfile.read(int(self.headers['Content-length']))
         self.base_handle()
 

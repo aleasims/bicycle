@@ -1,31 +1,30 @@
 # bicycle
 Web chat with crypto encapsulation
 
-## Running
-Запускать скриптом **run.sh**
+## Требования
+Версия Python: `>=Python3.5`
+
+В модуле `DBManager` импортируется `tinydb`. Установить её можно через `pip`:
 ```
-./run.sh
+pip install tinydb
 ```
-либо напрямую через Python:
+
+## Запуск
 ```
-python3.6 bicycle.py
+python bicycle.py
 ```
 
 Запуск отдельных модулей:
 ```
-python3.6 run/web_server_start.py
-python3.6 run/db_manager_start.py
+python run/web_server_start.py
+python run/db_manager_start.py
 ```
 
+Запуск через скрипт `./run.sh` пока что не актуален и не гарантирует работу.
 
-
-Возможен запуск из виртуального окружения. Для этого не обходимо передать ключ **-e**:
-```
-./run.sh -e
-```
 
 ## Текущее видение
-Видимо, вполне удовлетворительным вариантом будет использование TCPServer 
-https://docs.python.org/3/library/socketserver.html#socketserver.TCPServer
-или его наследников HttpServer.
-В репозитории сейчас залит `server.py` - example того, как выглядит простой сервер на сокетах. В реализации TCPServer написано примерно тоже самое.
+В качестве сервера используется dummy-сервер, написанный "на коленке"
+-> TODO: сделать сервер "покурче"
+
+Основная задача (помимо добивания функционала) - процесс генерации ключей и шифрование.

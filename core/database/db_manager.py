@@ -14,8 +14,6 @@ class DBManager:
         self.sock_timeout = config['socket_timeout']
         self.storage_path = config['storage_path']
 
-        self.db = DBWrapper(self.storage_path)
-
         self.BUFSIZE = 1024
         self.MAX_REQUEST_LEN = 2048
         self.DELIMITER = b'\n'  # Maybe not the best one
@@ -32,9 +30,9 @@ class DBManager:
         except OSError:
             if os.path.exists(self.ipc_path):
                 return False
-
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
+        self.db = DBWrapper(self.storage_path)
 
         self.ipc = socket.socket(socket.AF_UNIX)
         try:
@@ -64,6 +62,7 @@ class DBManager:
                 conn.close()
 
     def handle(self, conn, address):
+        t = time.time()
         request = db_proto.parse_rq(self.get_request(conn))
 
         perform = getattr(self.db, request['method'])
@@ -72,7 +71,7 @@ class DBManager:
         conn.sendall(db_proto.pack_rp(response))
         conn.close()
 
-        self.logger.info('{} - {}'.format(request['method'], response['code']))
+        self.logger.info('{} - {} ({})'.format(request['method'], response['code'], time.time() - t))
 
     def get_request(self, conn):
         request = bytearray()

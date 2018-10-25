@@ -9,15 +9,15 @@ class DBClient:
         ipc = socket.socket(socket.AF_UNIX)
         ipc.connect(self.ipc_path)
         print('Client sending query: {}'.format(query))
-        ipc.sendall(query)
+        ipc.sendall(bytes(query, 'utf-8'))
         resp = ipc.recv(2048)
         if resp:
-            print('Client received response: {}'.format(resp))
-            return resp
+            print('Client received response: {}'.format(resp.decode('utf-8')))
+            return resp.decode('utf-8')
         print('Client received no response')
 
     def create_new_user(self, username, passwd):
         request = 'NEWUSR name={}&passwd={}'.format(username, passwd)
-        if self.send(request):
+        if self.send(request) == b'OK\n':
             return True
         return False

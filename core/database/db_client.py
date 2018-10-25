@@ -17,7 +17,7 @@ class DBClient:
         print('Client received no response')
 
     def create_new_user(self, username, passwd):
-        request = 'NEWUSR name={}&passwd={}'.format(username, passwd)
-        if self.send(request) == b'OK\n':
+        request = 'NEWUSR name={}&passwd={}\n'.format(username, passwd)
+        if self.send(request) == 'OK\n':
             return True
         return False

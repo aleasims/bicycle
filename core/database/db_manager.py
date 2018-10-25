@@ -4,6 +4,7 @@ import os
 import traceback
 from core.database import db_proto
 from core.database.db_wrapper import DBWrapper
+from core.database.db_client import DBClient
 
 
 class DBManager:
@@ -17,6 +18,9 @@ class DBManager:
         self.BUFSIZE = 1024
         self.MAX_REQUEST_LEN = 2048
         self.DELIMITER = b'\n'  # Maybe not the best one
+
+    def new_client(self):
+        return DBClient(self.ipc_path)
 
     def start(self):
         if not self.init():

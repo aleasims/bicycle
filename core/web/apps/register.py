@@ -8,6 +8,7 @@ def activate(args):
     except KeyError:
         return
 
-    name = query['name']
+    name = query['name'][0]
+    passwd = query['passwd_hash'][0]
 
     return response

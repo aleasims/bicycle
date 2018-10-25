@@ -21,13 +21,15 @@ function submitNickname(){
     else {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
-            if(this.readyState == 4 && this.status == 204) {
-                document.getElementById("approvement").innerHTML = "You are registered! Now you can <a href=\"home\">log in</a>.";
-                regform.style.display = "none";
-            }
-            else {
-                document.getElementById("approvement").innerHTML = "Registration was unsoccessful, try again (maybe try different name).";
-                regform.reset();
+            if(this.readyState == 4) {
+                if (this.status == 204) {
+                    document.getElementById("approvement").innerHTML = "You are registered! Now you can <a href=\"home\">log in</a>.";
+                    regform.style.display = "none";
+                }
+                else {
+                    document.getElementById("approvement").innerHTML = "Registration was unsoccessful, try again (maybe try different name).";
+                    regform.reset();
+                }
             }
         };
         xhttp.open("POST", "register", true);

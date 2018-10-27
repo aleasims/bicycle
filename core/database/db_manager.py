@@ -17,10 +17,7 @@ class DBManager:
 
         self.BUFSIZE = 1024
         self.MAX_REQUEST_LEN = 2048
-        self.DELIMITER = b'\n'  # Maybe not the best one
-
-    def new_client(self):
-        return DBClient(self.ipc_path)
+        self.DELIMITER = db_proto.DELIMITER
 
     def start(self):
         if not self.init():
@@ -42,7 +39,6 @@ class DBManager:
         try:
             self.ipc.bind(self.ipc_path)
             self.ipc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.ipc.settimeout(self.sock_timeout)
             self.ipc.listen(self.backlog)
         except socket.error:
             return False
@@ -51,11 +47,8 @@ class DBManager:
     def main_loop(self):
         self.logger.info('Server running on {}'.format(self.ipc_path))
         while True:
-            try:
-                (conn, address) = self.ipc.accept()
-            except socket.timeout:
-                continue
-
+            (conn, address) = self.ipc.accept()
+            conn.settimeout(self.sock_timeout)
             try:
                 self.handle(conn, address)
             except Exception as e:
@@ -67,12 +60,15 @@ class DBManager:
 
     def handle(self, conn, address):
         t = time.time()
-        request = db_proto.parse_rq(self.get_request(conn))
+        request = db_proto.Request(self.get_request(conn))
 
-        perform = getattr(self.db, request['method'])
-        response = perform(request['params'])
+        perform = getattr(self.db, request.method, None)
+        if not perform:
+            raise Exception('Unknown method')
+        response = perform(request.params)
 
         conn.sendall(db_proto.pack_rp(response))
+        conn.shutdown()
         conn.close()
 
         self.logger.info('{} - {} ({})'.format(request['method'], response['code'], time.time() - t))
@@ -80,7 +76,10 @@ class DBManager:
     def get_request(self, conn):
         request = bytearray()
         while True:
-            request += conn.recv(self.BUFSIZE)
+            try:
+                request += conn.recv(self.BUFSIZE)
+            except socket.timeout:
+                break
             if self.DELIMITER in request:
                 break
             if len(request) > self.MAX_REQUEST_LEN:

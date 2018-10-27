@@ -33,7 +33,10 @@ class ProtoMessage:
         return self._bytes
 
     def _pack_fragments(self, fragments):
-        self._bytes = bytes(SPACE.join(fragments) + EOS, ENCODING)
+        if fragments[1]:
+            self._bytes = bytes(SPACE.join(fragments) + EOS, ENCODING)
+        else:
+            self._bytes = bytes(fragments[0] + EOS, ENCODING)
 
     def _defragment(self):
         try:
@@ -89,7 +92,7 @@ class Response(ProtoMessage):
                 raise Error('Data should be a list instance')
             self.data = data
             return
-        super().__init__()
+        super().__init__(_bytes)
 
     def _parse(self):
         code_string, data_string = self._defragment()
@@ -100,4 +103,5 @@ class Response(ProtoMessage):
 
     def _pack(self):
         fragments = [self.code.name, SEP.join(self.data)]
+        print('Packing response: {}'.format(fragments))
         self._pack_fragments(fragments)

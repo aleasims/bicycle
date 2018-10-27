@@ -54,7 +54,7 @@ class DBManager:
             except Exception as e:
                 self.logger.warning(
                     'Exception during handling request: {}'.format(e))
-                # traceback.print_last()
+                traceback.print_last()
             finally:
                 conn.close()
 
@@ -67,11 +67,11 @@ class DBManager:
             raise Exception('Unknown method')
         response = perform(request.params)
 
-        conn.sendall(db_proto.pack_rp(response))
-        conn.shutdown()
+        conn.sendall(response.bytes)
+        conn.shutdown(socket.SHUT_RDWR)
         conn.close()
 
-        self.logger.info('{} - {} ({})'.format(request['method'], response['code'], time.time() - t))
+        self.logger.info('{} - {} ({})'.format(request.method, response.code, time.time() - t))
 
     def get_request(self, conn):
         request = bytearray()

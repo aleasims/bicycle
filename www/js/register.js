@@ -22,7 +22,7 @@ function submitNickname(){
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if(this.readyState == 4) {
-                if (this.status == 204) {
+                if (this.status == 201) {
                     document.getElementById("approvement").innerHTML = "You are registered! Now you can <a href=\"chat\">log in</a>.";
                     regform.style.display = "none";
                 }

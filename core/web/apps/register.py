@@ -16,7 +16,7 @@ def activate(args):
     client = DBClient('/tmp/bc_ipc')
     request = db_proto.Request(method='NEWUSR', params={'name': name,
                                                         'passwd': passwd})
-    if client.send(request).code == db_proto.DBRecpCode.OK:
+    if client.send(request).code == db_proto.DBRespCode.OK:
         response = b'HTTP/1.1 201\r\n'
 
     return response

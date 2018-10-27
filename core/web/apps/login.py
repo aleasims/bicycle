@@ -3,7 +3,7 @@ from core.database.db_client import DBClient
 from core.database import db_proto
 
 
-def activate():
+def activate(args):
     response = b'HTTP/1.1 400\r\n'
     try:
         query = parse.parse_qs(args['input'].decode('utf-8'))

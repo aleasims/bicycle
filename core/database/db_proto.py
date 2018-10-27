@@ -51,7 +51,7 @@ class ProtoMessage:
     def _pack(self):
         raise NotImplementedError
 
-    def _parse(self)
+    def _parse(self):
         raise NotImplementedError
 
 

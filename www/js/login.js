@@ -1,38 +1,44 @@
 function submitNickname(){
-    var regform = document.forms["regform"];
+    var regform = document.forms["loginform"];
     var nickname = regform.nickname.value;
     var passwd = regform.passwd.value
     if (nickname == "") {
         regform.reset();
-        document.getElementById("approvement").innerHTML = "Please, enter nickname. Use latin letters and digits.";
+        document.getElementById("approvement").innerHTML = "Please, enter nickname";
         return;
     }
     var pattern = /^[\w]+$/;
     if(!passwd.match(pattern)) {
         regform.passwd.value = regform.passwd.defaultValue;
-        document.getElementById("approvement").innerHTML = "Choose different password: latin letters and digits";
+        document.getElementById("approvement").innerHTML = "Password may contain latin letters and digits";
         return;
     }
     if (passwd.length < 6) {
         regform.passwd.value = regform.passwd.defaultValue;
-        document.getElementById("approvement").innerHTML = "Choose different password: no less than 6 symbols";
+        document.getElementById("approvement").innerHTML = "Password is too short";
         return;
     }
     else {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if(this.readyState == 4) {
-                if (this.status == 204) {
-                    document.getElementById("approvement").innerHTML = "You are registered! Now you can <a href=\"chat\">log in</a>.";
+                if (this.status == 200) {
+                    document.getElementById("approvement").innerHTML = "You are logged in!";
                     regform.style.display = "none";
                 }
                 else {
-                    document.getElementById("approvement").innerHTML = "Registration was unsoccessful, try again (maybe try different name).";
-                    regform.reset();
+                    if (this.status == 401) {
+                        document.getElementById("approvement").innerHTML = "Wrong password, try again";
+                        regform.passwd.value = regform.passwd.defaultValue;
+                    }
+                    else {
+                        document.getElementById("approvement").innerHTML = "No suck nickname";
+                        regform.reset();
+                    }
                 }
             }
         };
-        xhttp.open("POST", "register", true);
+        xhttp.open("POST", "login", true);
         xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
         xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);

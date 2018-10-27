@@ -34,7 +34,7 @@ class DBWrapper:
         name = params['name'][-1]
         pwd = params['passwd'][-1]
         User = tinydb.Query()
-        usr = self.users.search(User.name = name)[-1]
+        usr = self.users.search(User.name == name)[-1]
         if pwd == usr['passwd']:
             return db_proto.Response(code=db_proto.DBRespCode.OK)
         return db_proto.Response(code=db_proto.DBRespCode.FAIL)

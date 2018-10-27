@@ -1,5 +1,6 @@
 from urllib import parse
 from core.database.db_client import DBClient
+from core.database import db_proto
 
 
 def activate(args):
@@ -12,8 +13,10 @@ def activate(args):
     name = query['name'][0]
     passwd = query['passwd_hash'][0]
 
-    cli = DBClient('/tmp/bc_ipc')
-    if cli.create_new_user(name, passwd):
-        response = b'HTTP/1.1 204\r\n'
+    client = DBClient('/tmp/bc_ipc')
+    request = db_proto.Request(method='NEWUSR', params={'name': name,
+                                                        'passwd': passwd})
+    if client.send(request).code == db_proto.DBRecpCode.OK:
+        response = b'HTTP/1.1 201\r\n'
 
     return response

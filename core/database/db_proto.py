@@ -103,5 +103,4 @@ class Response(ProtoMessage):
 
     def _pack(self):
         fragments = [self.code.name, SEP.join(self.data)]
-        print('Packing response: {}'.format(fragments))
         self._pack_fragments(fragments)

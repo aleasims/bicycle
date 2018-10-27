@@ -14,7 +14,6 @@ class DBClient:
 
     def send(self, request):
         query = request.bytes
-        print('Client sending query: {}'.format(query))
         ipc = socket.socket(socket.AF_UNIX)
         ipc.settimeout(self.sock_timeout)
         try:
@@ -31,7 +30,6 @@ class DBClient:
                 raise ClientError('Sending query malformed')
 
         response = self._recv(ipc)
-        print('Client received response: {}'.format(response))
         return db_proto.Response(response)
 
     def _recv(self, ipc):

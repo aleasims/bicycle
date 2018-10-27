@@ -10,22 +10,44 @@ class DBWrapper:
         self.users = self.db.table('users')
 
     def NEWUSR(self, params):
-        response = {'data': []}
+        name = params['name'][-1]
+        passwd = params['passwd'][-1]
+        User = tinydb.Query()
+        if self.users.contains(User['name'] == name):
+            code = DBRespCode.FAIL
+        else:
+            self.users.insert({'name': name, 'passwd': passwd})
+            code = DBRespCode.OK
+        return db_proto.Response(code=code)
+
+    def CHECKUSR(self, params):
         name = params['name'][-1]
         User = tinydb.Query()
         if self.users.contains(User['name'] == name):
-            response['code'] = DBRespCode.FAIL
+            code = DBRespCode.OK
         else:
-            self.users.insert({'name': name, 'level': 0})
-            response['code'] = DBRespCode.OK
-        return response
+            self.users.insert({'name': name, 'passwd': passwd})
+            code = DBRespCode.FAIL
+        return db_proto.Response(code=code)
+
+    def CHECKPWD(self, params):
+        name = params['name'][-1]
+        pwd = params['passwd'][-1]
+        User = tinydb.Query()
+        usr = self.users.search(User.name = name)[-1]
+        if pwd == usr['passwd']:
+            return db_proto.Response(code=db_proto.DBRespCode.OK)
+        return db_proto.Response(code=db_proto.DBRespCode.FAIL)
 
     def LISTUSR(self, params):
-        response = {'code': DBRespCode.OK, 'data': []}
+        data = []
         for user in self.users:
-            response['data'].append(user['name'])
-        return response
+            data.append(user['name'])
+        return db_proto.Response(code=DBRespCode.OK, data=data)
 
     def DELALLUSR(self, params):
-        self.users.purge()
-        return {'code': DBRespCode.OK, 'data': []}
+        try:
+            self.users.purge()
+            return db_proto.Response(code=DBRespCode.OK)
+        except Exception:
+            return db_proto.Response(code=DBRespCode.FAIL)

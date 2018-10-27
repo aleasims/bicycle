@@ -1,11 +1,19 @@
 <html>
   <head>
     <title>SyncMessage</title>
+    <script src="js/login.js"></script>
   </head>
   <body bgcolor=white>
     <h1>SyncMessage</h1>
 
     <h2>Welcome to Chat!</h2>
+    <p>Login:</p>
+    <p id="approvement"></p>
+     <form id="loginform" action="javascript:void(0);">
+        Nickname: <input type="text" name="nickname" placeholder="Enter Nickname"><br>
+        Password: <input type="password" name="passwd" placeholder="Enter Password"><br>
+        <input type="button" onclick="submitNickname()" value="Log in">
+    </form>
 
     <div id="chat">
       <textarea rows="10" cols="70" style="resize:none" readonly></textarea>

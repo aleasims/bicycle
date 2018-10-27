@@ -1,5 +1,5 @@
 import socket
-import core.database.db_proto
+from core.database import db_proto
 
 
 class ClientError(Exception):
@@ -41,6 +41,6 @@ class DBClient:
                 data += ipc.recv(self.bufsize)
             except socket.timeout:
                 raise ClientError('Response malformed')
-            if db_proto.DELIMITER in request:
+            if db_proto.DELIMITER in data:
                 break
         return data

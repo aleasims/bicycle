@@ -1,5 +1,6 @@
 import tinydb
 import os
+from core.database import db_proto
 from core.database.db_proto import DBRespCode
 
 
@@ -36,8 +37,8 @@ class DBWrapper:
         User = tinydb.Query()
         usr = self.users.search(User.name == name)[-1]
         if pwd == usr['passwd']:
-            return db_proto.Response(code=db_proto.DBRespCode.OK)
-        return db_proto.Response(code=db_proto.DBRespCode.FAIL)
+            return db_proto.Response(code=DBRespCode.OK)
+        return db_proto.Response(code=DBRespCode.FAIL)
 
     def LISTUSR(self, params):
         data = []

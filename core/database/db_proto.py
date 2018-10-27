@@ -33,7 +33,7 @@ class ProtoMessage:
         return self._bytes
 
     def _pack_fragments(self, fragments):
-        self._bytes = bytes(SPACE.join(fragments), ENCODING)
+        self._bytes = bytes(SPACE.join(fragments) + EOS, ENCODING)
 
     def _defragment(self):
         try:

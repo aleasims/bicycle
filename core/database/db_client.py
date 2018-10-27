@@ -1,6 +1,5 @@
 import socket
 import core.database.db_proto
-from core.database.db_manager import DBManager
 
 
 class ClientError(Exception):

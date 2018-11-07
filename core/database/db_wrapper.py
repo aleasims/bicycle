@@ -3,6 +3,7 @@ import uuid
 import time
 import traceback
 from tinydb import TinyDB, Query
+from tinydb.operations import delete
 from core.database import db_proto
 from core.database.db_proto import DBRespCode
 from core.database.cache import Cacher
@@ -33,18 +34,28 @@ class DBWrapper:
 
     def CHECKSSID(self, params):
         ssid = params['ssid'][-1]
-        user = self.cache.online.get(SSID=ssid)
-        if len(user) > 0 and user[0].SSID == ssid:
-            return db_proto.Response(code=DBRespCode.OK, data=[user[0].nickname])
+        # user = self.cache.online.get(SSID=ssid)
+        # if len(user) > 0 and user[0].SSID == ssid:
+        user = self.users.get(Query()['SSID'] == ssid)
+        if user:
+            return db_proto.Response(code=DBRespCode.OK, data=[user['name']])
         return db_proto.Response(code=DBRespCode.FAIL)
 
     def USRON(self, params):
-        name, ssid = params['name'][-1], uuid.uuid4().hex
-        self.cache.online.add(SSID=ssid, nickname=name, lastAct=round(time.time()))
+        name = params['name'][-1]
+        ssid = uuid.uuid4().hex
+        self.users.update({'logged': True,
+                           'SSID': ssid,
+                           'lastAct': time.time()}, Query()['name'] == name)
+        # self.cache.online.add(SSID=ssid, nickname=name, lastAct=round(time.time()))
         return db_proto.Response(code=DBRespCode.OK, data=[ssid])
 
     def USROFF(self, params):
-        self.cache.online.remove(SSID=params['ssid'][-1])
+        ssid = params['ssid'][-1]
+        self.users.update({'logged': False}, Query()['SSID'] == ssid)
+        self.users.update(delete('lastAct'), Query()['SSID'] == ssid)
+        self.users.update(delete('SSID'), Query()['SSID'] == ssid)
+        # self.cache.online.remove(SSID=)
         return db_proto.Response(code=DBRespCode.OK)
 
     def NEWUSR(self, params):
@@ -55,19 +66,20 @@ class DBWrapper:
 
         self.users.insert({'name': name,
                            'passwd': passwd,
-                           'register_date': time.ctime()})
+                           'registerDate': time.ctime(),
+                           'logged': False})
         return db_proto.Response(code=DBRespCode.OK)
 
     def CHECKUSR(self, params):
         name = params['name'][-1]
-        if self.users.get(Query()['name'] == name):
+        if self.users.contains(Query()['name'] == name):
             return db_proto.Response(code=DBRespCode.OK)
         return db_proto.Response(code=DBRespCode.FAIL)
 
     def CHECKPWD(self, params):
         name = params['name'][-1]
         pwd = params['passwd'][-1]
-        user = self.users.get(Query().name == name)
+        user = self.users.get(Query()['name'] == name)
         if pwd == user['passwd']:
             return db_proto.Response(code=DBRespCode.OK)
         return db_proto.Response(code=DBRespCode.FAIL)

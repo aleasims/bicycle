@@ -6,16 +6,19 @@ from tinydb import TinyDB, Query
 from tinydb.operations import delete
 from core.database import db_proto
 from core.database.db_proto import DBRespCode
-from core.database.cache import Cacher
 
 
 class DBWrapper:
-    def __init__(self, logger, storage_path):
+    '''
+    User and Message database API class
+    In fact - wrapper from TinyDB, transformint it for context database
+    '''
+    def __init__(self, logger, storage_path, exp_time):
         self.logger = logger
+        self.EXPIRE_TIME = exp_time
         self.storage_path = storage_path
         self.db = TinyDB(os.path.join(storage_path, 'data.json'))
         self.users = self.db.table('users')
-        self.cache = Cacher(tables={'online': ('nickname', 'SSID', 'lastAct')})
         # add IP
 
     def __log_err(self, err):
@@ -32,30 +35,35 @@ class DBWrapper:
             self.__log_err(err)
             return db_proto.Response(code=DBRespCode.FAIL)
 
+    # Wrapping functions:
+    # - named with capital latin letters only
+    # - accepts `params` argument - dict-like object
+
     def CHECKSSID(self, params):
+        client_ip = params['client_ip'][-1]
         ssid = params['ssid'][-1]
-        # user = self.cache.online.get(SSID=ssid)
-        # if len(user) > 0 and user[0].SSID == ssid:
         user = self.users.get(Query()['SSID'] == ssid)
-        if user:
+        if user and user['client_ip'] == client_ip and \
+                (int(time.time()) - user['lastAct'] < self.EXPIRE_TIME):
             return db_proto.Response(code=DBRespCode.OK, data=[user['name']])
         return db_proto.Response(code=DBRespCode.FAIL)
 
     def USRON(self, params):
         name = params['name'][-1]
+        client_ip = params['client_ip'][-1]
         ssid = uuid.uuid4().hex
         self.users.update({'logged': True,
+                           'client_ip': client_ip,
                            'SSID': ssid,
-                           'lastAct': time.time()}, Query()['name'] == name)
-        # self.cache.online.add(SSID=ssid, nickname=name, lastAct=round(time.time()))
+                           'lastAct': int(time.time())}, Query()['name'] == name)
         return db_proto.Response(code=DBRespCode.OK, data=[ssid])
 
     def USROFF(self, params):
         ssid = params['ssid'][-1]
         self.users.update({'logged': False}, Query()['SSID'] == ssid)
         self.users.update(delete('lastAct'), Query()['SSID'] == ssid)
+        self.users.update(delete('client_ip'), Query()['SSID'] == ssid)
         self.users.update(delete('SSID'), Query()['SSID'] == ssid)
-        # self.cache.online.remove(SSID=)
         return db_proto.Response(code=DBRespCode.OK)
 
     def NEWUSR(self, params):

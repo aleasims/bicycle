@@ -37,7 +37,7 @@ function logOut(){
     http.send();
     eraseCookie("nickname");
     eraseCookie("SSID");
-    alert("Logged out!");
+    location.reload();
 };
 
 function logIn(){

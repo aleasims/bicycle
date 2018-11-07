@@ -22,9 +22,11 @@ def activate(args):
     if path.params == 'checkssid':
         return checkssid(args)
 
+    # Handling log out requests
     if path.params == 'logout':
         return logout(args)
 
+    # Handling log in requests
     # Get provided input data from request
     try:
         query = parse.parse_qs(args.get('input', '').decode(DEFAULT_ENCODING))
@@ -39,7 +41,7 @@ def activate(args):
 
     # Try to authorize user
     try:
-        return authorize(name, passwd)
+        return authorize(name, passwd, args['client'][0])
     except (ClientError, db_proto.Error) as e:
         print(e)
 
@@ -60,7 +62,7 @@ def logout(args):
                          DEFAULT_ENCODING)
 
 
-def authorize(name, passwd):
+def authorize(name, passwd, client_ip):
     # Identification
     ident = db_proto.Request(method='CHECKUSR', params={'name': name})
     if db_cli.send(ident).code != db_proto.DBRespCode.OK:
@@ -77,7 +79,7 @@ def authorize(name, passwd):
                      DEFAULT_ENCODING)
 
     # Change user status to `online`
-    mkonline = db_proto.Request(method='USRON', params={'name': name})
+    mkonline = db_proto.Request(method='USRON', params={'name': name, 'client_ip': client_ip})
     db_response = db_cli.send(mkonline)
     if db_response.code == db_proto.DBRespCode.OK:
         ssid = db_response.data[0]
@@ -94,11 +96,15 @@ def authorize(name, passwd):
 def checkssid(args):
     ssid = extract_ssid(args)
     if ssid:
-        cookiecheck = db_proto.Request(method='CHECKSSID', params={'ssid': ssid.value})
+        cookiecheck = db_proto.Request(method='CHECKSSID',
+                                       params={'ssid': ssid.value,
+                                               'client_ip': args['client'][0]})
         response = db_cli.send(cookiecheck)
         if response.code == db_proto.DBRespCode.OK:
             return bytes('HTTP/1.1 200\r\n' +
                          'X-SSID-approvement: OK\r\n' +
+                         'Set-Cookie: SSID={}; Max-Age={}\r\n'.format(
+                            ssid, CHECKOUT_TIME) +
                          'Set-Cookie: nickname={}; Max-Age={}\r\n\r\n'.format(
                             response.data[0], CHECKOUT_TIME),
                          DEFAULT_ENCODING)

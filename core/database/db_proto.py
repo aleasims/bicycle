@@ -1,3 +1,5 @@
+# TODO: validate request method names (capital latin letters)
+# TODO: check existance of `SEP` in data
 from urllib import parse
 from enum import Enum
 
@@ -5,7 +7,7 @@ from enum import Enum
 EOS = '\n' # still not the best one
 ENCODING = 'utf-8'
 DELIMITER = bytes(EOS, ENCODING)
-SEP = '|' # TODO: check existance of `SEP` in data
+SEP = '|'
 SPACE = ' '
 
 
@@ -62,7 +64,7 @@ class Request(ProtoMessage):
     def __init__(self, _bytes=None, method='', params={}):
         if method:
             if type(method) != str or not method.isalpha():
-                raise Error('Unsupported method')
+                raise Error('Invalid method name')
             self.method = method
             if type(params) != dict:
                 raise Error('Params should be a dict instance')

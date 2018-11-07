@@ -10,7 +10,7 @@ class DBClient:
     def __init__(self, ipc_path):
         self.ipc_path = ipc_path
         self.bufsize = 2048
-        self.sock_timeout = 10
+        self.sock_timeout = 1
 
     def send(self, request):
         query = request.bytes
@@ -30,6 +30,8 @@ class DBClient:
                 raise ClientError('Sending query malformed')
 
         response = self._recv(ipc)
+        ipc.close()
+
         return db_proto.Response(response)
 
     def _recv(self, ipc):

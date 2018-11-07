@@ -1,6 +1,7 @@
 {
     "name": "DBServer",
     "storage_path": "/tmp/bc_db",
+    "type": "local",
     "ipc_path": "/tmp/bc_ipc",
-    "socket_timeout": 2
+    "connection_timeout": 2
 }

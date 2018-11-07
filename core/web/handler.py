@@ -19,7 +19,7 @@ class Handler(BaseHTTPRequestHandler):
         self.log(response)
 
     def prepare_args(self):
-        args = {'path': self.path}
+        args = {'path': self.path, 'headers': self.headers}
         if getattr(self, 'input', None) is not None:
             args['input'] = self.input 
         return args

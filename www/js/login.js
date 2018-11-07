@@ -1,48 +1,134 @@
-function submitNickname(){
+var logged = false;
+var logNickname = "";
+
+function checkSsid(){
+    var checker = new XMLHttpRequest();
+    checker.onreadystatechange = function() {
+        if(this.readyState == 4) {
+            if (this.status == 200 && this.getResponseHeader('X-SSID-approvement') === 'OK') {
+                logged = true;
+            }
+            else {
+                logged = false;
+            }
+        }
+        controleLogArea("logArea");
+        controleLogNickname("logNickname");
+    };
+    checker.open("GET", "login;checkssid", true);
+    checker.send();
+};
+
+function logOut(){
+    var http = new XMLHttpRequest();
+    http.onreadystatechange = function() {
+        if(this.readyState == 4 && this.status == 200) {
+            if (this.getResponseHeader('X-Auth-status') === 'OUT') {
+                logged = false;
+            }
+            else {
+                logged = true;
+            }
+        }
+        controleLogArea("logArea");
+        controleLogNickname("logNickname");
+    };
+    http.open("GET", "login;logout", true);
+    http.send();
+    eraseCookie("nickname");
+    eraseCookie("SSID");
+    alert("Logged out!");
+};
+
+function logIn(){
     var regform = document.forms["loginform"];
     var nickname = regform.nickname.value;
     var passwd = regform.passwd.value
     if (nickname == "") {
         regform.reset();
-        document.getElementById("approvement").innerHTML = "Please, enter nickname";
+        document.getElementById("logApprovement").innerHTML = "Please, enter nickname";
         return;
     }
     var pattern = /^[\w]+$/;
     if(!passwd.match(pattern)) {
         regform.passwd.value = regform.passwd.defaultValue;
-        document.getElementById("approvement").innerHTML = "Password may contain latin letters and digits";
+        document.getElementById("logApprovement").innerHTML = "Password may contain latin letters and digits";
         return;
     }
     if (passwd.length < 6) {
         regform.passwd.value = regform.passwd.defaultValue;
-        document.getElementById("approvement").innerHTML = "Password is too short";
+        document.getElementById("logApprovement").innerHTML = "Password is too short";
         return;
     }
     else {
+        setCookie("nickname", nickname, 1);
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
             if(this.readyState == 4) {
                 if (this.status == 200) {
-                    document.getElementById("approvement").innerHTML = "You are logged in!";
-                    regform.style.display = "none";
-                }
-                else {
-                    if (this.status == 401) {
-                        document.getElementById("approvement").innerHTML = "Wrong password, try again";
+                    if (this.getResponseHeader('X-Auth-status') === 'OK') {
+                        document.getElementById("logApprovement").innerHTML = "You are logged in!";
+                        logged = true;
+                    }
+                    else if (this.getResponseHeader('X-Auth-status') === 'Authentication failed') {
+                        document.getElementById("logApprovement").innerHTML = "Wrong password, try again";
                         regform.passwd.value = regform.passwd.defaultValue;
                     }
-                    else {
-                        document.getElementById("approvement").innerHTML = "No suck nickname";
+                    else if (this.getResponseHeader('X-Auth-status') === 'Identification failed') {
+                        document.getElementById("logApprovement").innerHTML = "No suck nickname";
                         regform.reset();
                     }
+
                 }
             }
+            controleLogArea("logArea");                        
+            controleLogNickname("logNickname");
         };
         xhttp.open("POST", "login", true);
         xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
         xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);
     }
+};
+
+function controleLogArea(area){
+    document.getElementById(area).hidden = logged;
+    document.getElementById("logOutButton").hidden = !logged;
+};
+
+function controleLogNickname(id){
+    if (logged) {
+        document.getElementById(id).hidden = false;
+        document.getElementById(id).innerHTML = getCookie("nickname");
+    }
+    else {
+        document.getElementById(id).hidden = true;
+    }
+};
+
+function setCookie(name, value, days) {
+    var expires = "";
+    if (days) {
+        var date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+    }
+    document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+}
+
+function getCookie(name) {
+    var nameEQ = name + "=";
+    var ca = document.cookie.split(';');
+    for(var i=0;i < ca.length;i++) {
+        var c = ca[i];
+        while (c.charAt(0)==' ') c = c.substring(1,c.length);
+        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length,c.length);
+    }
+    return null;
+}
+
+function eraseCookie(name) {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:01 GMT;';
 }
 /*
  * A JavaScript implementation of the RSA Data Security, Inc. MD5 Message

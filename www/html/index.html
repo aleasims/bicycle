@@ -1,24 +1,31 @@
 <html>
   <head>
     <title>SyncMessage</title>
+    <script src="js/login.js"></script>
   </head>
+
   <body bgcolor=white>
     <h1>SyncMessage</h1>
+    <br>
+    <a href="reg">Create account</a>
+    <div id="logNickname" align="right" hidden=""></div>
+    <button id= "logOutButton" onclick="logOut()" hidden="">Log out</button>
+    <br><br>
 
-    <h2>Home</h2>
+    <p id="logApprovement"></p>
 
-    To a <a href="reg">registration</a> page.
+    <div id="logArea" hidden="">
+      <script type="text/javascript">controleLogArea("logArea");</script>
+      <p>Login:</p>
+      <form id="loginform" action="javascript:void(0);">
+        Nickname: <input type="text" name="nickname" placeholder="Enter Nickname"><br>
+        Password: <input type="password" name="passwd" placeholder="Enter Password"><br>
+        <input type="button" onclick="logIn()" value="Log in">
+       </form>
+    </div>
 
-    <p id="test-field"></p>
     <script type="text/javascript">
-      var test = new XMLHttpRequest();
-      test.onreadystatechange = function() {
-        if(this.readyState == 4 && this.status == 200) {
-          document.getElementById("test-field").innerHTML = test.responseText;
-        }
-      };
-      test.open("GET", "chat-api", true);
-      //test.send()
+      checkSsid();
     </script>
 
   </body>

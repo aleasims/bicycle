@@ -1,28 +1,123 @@
+import datetime
+from time import mktime
 from urllib import parse
-from core.database.db_client import DBClient
+from http.cookies import BaseCookie
+from wsgiref.handlers import format_date_time
+from core.database.db_client import DBClient, ClientError
 from core.database import db_proto
 
 
+DEFAULT_ENCODING = 'utf-8'
+CHECKOUT_TIME = 600
+db_cli = DBClient('/tmp/bc_ipc')
+
+
 def activate(args):
-    response = b'HTTP/1.1 400\r\n'
+    path = args.get('path')
+    if not path:
+        return
+    path = parse.urlparse(path)
+
+    # Check if is already logged and has a valid SSID
+    if path.params == 'checkssid':
+        return checkssid(args)
+
+    if path.params == 'logout':
+        return logout(args)
+
+    # Get provided input data from request
     try:
-        query = parse.parse_qs(args['input'].decode('utf-8'))
-    except KeyError:
+        query = parse.parse_qs(args.get('input', '').decode(DEFAULT_ENCODING))
+    except UnicodeDecodeError:
         return
 
-    name = query['name'][0]
-    passwd = query['passwd_hash'][0]
+    # Get nickname and pwd from input data
+    name = query.get('name', [None])[-1]
+    passwd = query.get('passwd_hash', [None])[-1]
+    if not name or not passwd:
+        return bytes('HTTP/1.1 400\r\n\r\n', DEFAULT_ENCODING)
 
-    client = DBClient('/tmp/bc_ipc')
-    request = db_proto.Request(method='CHECKUSR', params={'name': name})
-    response = client.send(request)
-    if response.code != db_proto.DBRespCode.OK:
-        return b'HTTP/1.1 404\r\n'
+    # Try to authorize user
+    try:
+        return authorize(name, passwd)
+    except (ClientError, db_proto.Error) as e:
+        print(e)
 
-    request = db_proto.Request(method='CHECKPWD', params={'name': name,
-                                                          'passwd': passwd})
-    response = client.send(request)
-    if response.code != db_proto.DBRespCode.OK:
-        return b'HTTP/1.1 401\r\n'
+    return bytes('HTTP/1.1 500\r\n\r\n', DEFAULT_ENCODING)
 
-    return b'HTTP/1.1 200\r\nSet-cookie: SSID=100000\r\n'
+
+def logout(args):
+    ssid = extract_ssid(args)
+    if ssid:
+        off_user = db_proto.Request(method='USROFF', params={'ssid': ssid.value})
+        if db_cli.send(off_user) == db_proto.DBRespCode.OK:
+            return bytes('HTTP/1.1 200\r\n' +
+                         'X-Auth-status: OUT\r\n',
+                         DEFAULT_ENCODING)
+        else:
+            return bytes('HTTP/1.1 200\r\n' +
+                         'X-Auth-status: Logging out failed\r\n\r\n',
+                         DEFAULT_ENCODING)
+
+
+def authorize(name, passwd):
+    # Identification
+    ident = db_proto.Request(method='CHECKUSR', params={'name': name})
+    if db_cli.send(ident).code != db_proto.DBRespCode.OK:
+        return bytes('HTTP/1.1 200\r\n' +
+                     'X-Auth-status: Identification failed\r\n\r\n',
+                     DEFAULT_ENCODING)
+
+    # Authentication
+    auth = db_proto.Request(method='CHECKPWD', params={'name': name,
+                                                       'passwd': passwd})
+    if db_cli.send(auth).code != db_proto.DBRespCode.OK:
+        return bytes('HTTP/1.1 200\r\n' +
+                     'X-Auth-status: Authentication failed\r\n\r\n',
+                     DEFAULT_ENCODING)
+
+    # Change user status to `online`
+    mkonline = db_proto.Request(method='USRON', params={'name': name})
+    db_response = db_cli.send(mkonline)
+    if db_response.code == db_proto.DBRespCode.OK:
+        ssid = db_response.data[0]
+        return bytes('HTTP/1.1 200\r\n' +
+                     'X-Auth-status: OK\r\n' +
+                     'Set-Cookie: SSID={}; Max-Age={}; HttpOnly\r\n'.format(ssid, CHECKOUT_TIME),
+                     DEFAULT_ENCODING)
+    else:
+        return bytes('HTTP/1.1 200\r\n' +
+                     'X-Auth-status: Status failed\r\n',
+                     DEFAULT_ENCODING)
+
+
+def checkssid(args):
+    ssid = extract_ssid(args)
+    if ssid:
+        cookiecheck = db_proto.Request(method='CHECKSSID', params={'ssid': ssid.value})
+        response = db_cli.send(cookiecheck)
+        if response.code == db_proto.DBRespCode.OK:
+            return bytes('HTTP/1.1 200\r\n' +
+                         'X-SSID-approvement: OK\r\n' +
+                         'Set-Cookie: nickname={}; Max-Age={}\r\n\r\n'.format(
+                            response.data[0], CHECKOUT_TIME),
+                         DEFAULT_ENCODING)
+        else:
+            return bytes('HTTP/1.1 200\r\n' +
+                         'X-SSID-approvement: Invalid\r\n\r\n',
+                         DEFAULT_ENCODING)
+    return bytes('HTTP/1.1 200\r\n' +
+                 'X-SSID-approvement: Not Found\r\n\r\n',
+                 DEFAULT_ENCODING)
+
+
+def extract_ssid(args):
+    cookie_str = args.get('headers', {}).get('Cookie')
+    cookie = BaseCookie(cookie_str)
+    ssid = cookie.get('SSID', None)
+    return ssid
+
+def get_expires_time(expires_time):
+    now = datetime.datetime.now() + datetime.timedelta(0, expires_time)
+    stamp = mktime(now.timetuple())
+    return format_date_time(stamp)

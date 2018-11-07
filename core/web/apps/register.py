@@ -18,5 +18,4 @@ def activate(args):
                                                         'passwd': passwd})
     if client.send(request).code == db_proto.DBRespCode.OK:
         response = b'HTTP/1.1 201\r\n'
-
     return response

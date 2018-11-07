@@ -7,13 +7,39 @@
     <h1>SyncMessage</h1>
 
     <h2>Welcome to Chat!</h2>
-    <p>Login:</p>
+    <p id="loginer">Login:</p>
     <p id="approvement"></p>
      <form id="loginform" action="javascript:void(0);">
         Nickname: <input type="text" name="nickname" placeholder="Enter Nickname"><br>
         Password: <input type="password" name="passwd" placeholder="Enter Password"><br>
-        <input type="button" onclick="submitNickname()" value="Log in">
+        <input type="button" onclick="logIn()" value="Log in">
     </form>
+    <script type="text/javascript">
+      console.log(logged)
+      function getCookie(cname) {
+        var name = cname + "=";
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        for(var i = 0; i <ca.length; i++) {
+          var c = ca[i];
+          while (c.charAt(0) == ' ') {
+            c = c.substring(1);
+          }
+          if (c.indexOf(name) == 0) {
+            return c.substring(name.length, c.length);
+          }
+        }
+        return "";
+      }
+      var cookie = getCookie("verified");
+      if (cookie != "") {
+        document.forms["loginform"].style.display = "none";
+        document.getElementById("loginer").innerHTML = "Logged"
+        console.log("Authorized");
+      }
+
+      // window.location.reload(true);
+    </script>
 
     <div id="chat">
       <textarea rows="10" cols="70" style="resize:none" readonly></textarea>

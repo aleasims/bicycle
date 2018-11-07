@@ -1,10 +1,15 @@
+'''
+Discribes protocol for communicating with context database.
+Performs serialization job and parse
+'''
 # TODO: validate request method names (capital latin letters)
 # TODO: check existance of `SEP` in data
+# TODO: think of another `EOS`
 from urllib import parse
 from enum import Enum
 
 
-EOS = '\n' # still not the best one
+EOS = '\n'
 ENCODING = 'utf-8'
 DELIMITER = bytes(EOS, ENCODING)
 SEP = '|'

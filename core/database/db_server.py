@@ -7,10 +7,15 @@ from core.database.db_wrapper import DBWrapper
 
 
 class DBServer:
+    '''
+    Accepts queries to database and 
+    sends them to handling into DB (wrapper)
+    '''
     def __init__(self, config, logger):
         self.logger = logger
         self.ipc_path = config['ipc_path']
         self.type = config['type']
+        self.session_exp_time = config['session_exp_time']
         self.conn_timeout = config['connection_timeout']
         self.storage_path = config['storage_path']
 
@@ -33,7 +38,7 @@ class DBServer:
                 return False
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
-        self.wrapper = DBWrapper(self.logger, self.storage_path)
+        self.wrapper = DBWrapper(self.logger, self.storage_path, self.session_exp_time)
 
         self.ipc = socket.socket(socket.AF_UNIX)
         try:

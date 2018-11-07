@@ -27,9 +27,10 @@ class Handler(BaseHTTPRequestHandler):
         return args
 
     def log(self, response):
-        code = response.decode('utf-8').split('\r\n', 1)[0].split(' ', 1)[1]
-        log_message = '{}:{} - {} {} - {}'.format(*self.client_address,
-                                                  self.command,
-                                                  self.path,
-                                                  code)
-        self.logger.info(log_message)
+        if hasattr(self, 'logger'):
+            code = response.decode('utf-8').split('\r\n', 1)[0].split(' ', 1)[1]
+            log_message = '{}:{} - {} {} - {}'.format(*self.client_address,
+                                                    self.command,
+                                                    self.path,
+                                                    code)
+            self.logger.info(log_message)

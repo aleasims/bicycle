@@ -7,14 +7,14 @@ from core.database.db_wrapper import DBWrapper
 from core.database.db_client import DBClient
 
 
-class DBManager:
+class DBServer:
     def __init__(self, config, logger):
         self.logger = logger
         self.ipc_path = config['ipc_path']
-        self.backlog = config['backlog']
         self.sock_timeout = config['socket_timeout']
         self.storage_path = config['storage_path']
 
+        self.BACKLOG = 5
         self.BUFSIZE = 1024
         self.MAX_REQUEST_LEN = 2048
         self.DELIMITER = db_proto.DELIMITER
@@ -33,13 +33,13 @@ class DBManager:
                 return False
         if not os.path.exists(self.storage_path):
             os.makedirs(self.storage_path)
-        self.db = DBWrapper(self.storage_path)
+        self.db = DBWrapper(self.logger, self.storage_path)
 
         self.ipc = socket.socket(socket.AF_UNIX)
         try:
             self.ipc.bind(self.ipc_path)
             self.ipc.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            self.ipc.listen(self.backlog)
+            self.ipc.listen(self.BACKLOG)
         except socket.error:
             return False
         return True
@@ -54,7 +54,7 @@ class DBManager:
             except Exception as e:
                 self.logger.warning(
                     'Exception during handling request: {}'.format(e))
-                traceback.print_last()
+                # traceback.print_last()
             finally:
                 conn.close()
 
@@ -71,7 +71,7 @@ class DBManager:
         conn.shutdown(socket.SHUT_RDWR)
         conn.close()
 
-        self.logger.info('{} - {} ({})'.format(request.method, response.code, time.time() - t))
+        self.logger.info('{} - {} ({}s)'.format(request.method, response.code, round(time.time() - t, 7)))
 
     def get_request(self, conn):
         request = bytearray()

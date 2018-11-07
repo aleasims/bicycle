@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 
-from core.database.db_manager import DBServer
+from core.database.db_server import DBServer
 from core.common import configure_logger, load_config
 
 

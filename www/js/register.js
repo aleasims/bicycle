@@ -32,7 +32,7 @@ function submitNickname(){
                 }
             }
         };
-        xhttp.open("POST", "register", true);
+        xhttp.open("POST", "/app/register", true);
         xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
         xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);

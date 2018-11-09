@@ -15,7 +15,7 @@ function checkSsid(){
         controleLogArea("logArea");
         controleLogNickname("logNickname");
     };
-    checker.open("GET", "login;checkssid", true);
+    checker.open("GET", "/app/login?checkssid=1", true);
     checker.send();
 };
 
@@ -84,7 +84,7 @@ function logIn(){
             controleLogArea("logArea");                        
             controleLogNickname("logNickname");
         };
-        xhttp.open("POST", "login", true);
+        xhttp.open("POST", "/app/login", true);
         xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
         xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);

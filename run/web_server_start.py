@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(sys.path[0], '..'))
 
-from core.web.web_server import WebServer
+from core.web.server import WebServer
 from core.common import configure_logger, load_config
 
 

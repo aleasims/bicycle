@@ -1,7 +1,5 @@
-from http.server import BaseHTTPRequestHandler
 from socketserver import TCPServer
-from core.web.routes import routes
-from core.web.handler import Handler
+from core.web.handler import WebHandler
 
 
 class WebServer:
@@ -13,8 +11,8 @@ class WebServer:
         HOST, PORT = self.config['host'], self.config['port']
         TCPServer.allow_reuse_address = True
         self.logger.info('Starting server on {}:{}'.format(HOST, PORT))
-        self.server = TCPServer((HOST, PORT), Handler)
-        Handler.logger = self.logger
+        WebHandler.logger = self.logger
+        self.server = TCPServer((HOST, PORT), WebHandler)
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:

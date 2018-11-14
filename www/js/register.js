@@ -21,8 +21,8 @@ function submitNickname(){
     else {
         var xhttp = new XMLHttpRequest();
         xhttp.onreadystatechange = function() {
-            if(this.readyState == 4) {
-                if (this.status == 201) {
+            if(this.readyState == 4 && this.status == 200) {
+                if (this.getResponseHeader('X-Reg-status') === 'OK') {
                     document.getElementById("approvement").innerHTML = "You are registered! Now you can <a href=\"chat\">log in</a>.";
                     regform.style.display = "none";
                 }
@@ -32,10 +32,9 @@ function submitNickname(){
                 }
             }
         };
-        xhttp.open("POST", "/app/register", true);
-        xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
-        xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);
+        xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}`, true);
+        xhttp.send();
     }
 }
 /*

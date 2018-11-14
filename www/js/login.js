@@ -15,7 +15,7 @@ function checkSsid(){
         controleLogArea("logArea");
         controleLogNickname("logNickname");
     };
-    checker.open("GET", "/app/login?checkssid=1", true);
+    checker.open("GET", "/app/auth?action=checkssid", true);
     checker.send();
 };
 
@@ -33,7 +33,7 @@ function logOut(){
         controleLogArea("logArea");
         controleLogNickname("logNickname");
     };
-    http.open("GET", "login;logout", true);
+    http.open("GET", "/app/auth?action=logout", true);
     http.send();
     eraseCookie("nickname");
     eraseCookie("SSID");
@@ -84,10 +84,9 @@ function logIn(){
             controleLogArea("logArea");                        
             controleLogNickname("logNickname");
         };
-        xhttp.open("POST", "/app/login", true);
-        xhttp.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
         passwd_hash = hex_md5(passwd);
-        xhttp.send(`name=${nickname}&passwd_hash=${passwd_hash}`);
+        xhttp.open("GET", `/app/auth?name=${nickname}&pwd=${passwd_hash}`, true);
+        xhttp.send();
     }
 };
 

@@ -1,5 +1,7 @@
 {
 	"name": "WebServer",
+	"version": "0.1b",
 	"host": "",
-	"port": 8080
+	"port": 8080,
+	"www_dir": "/home/alea/bicycle/www"
 }

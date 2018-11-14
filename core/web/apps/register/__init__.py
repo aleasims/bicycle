@@ -1,21 +1,34 @@
+from http import HTTPStatus
 from urllib import parse
 from core.database.db_client import DBClient
 from core.database import db_proto
 
 
+client = DBClient('/tmp/bc_ipc')
+
+
 def activate(args):
-    response = b'HTTP/1.1 406\r\n'
-    try:
-        query = parse.parse_qs(args['input'].decode('utf-8'))
-    except KeyError:
-        return
+    # Handle register request
+    # Accepts new user name and pwd hash
+    #
+    # Request example:
+    # GET /app/register?name=Sasha&pwd=as322mdj93dk
 
-    name = query['name'][0]
-    passwd = query['passwd_hash'][0]
+    params = parse.parse_qs(args.get('params', ''))
+    name = params.get('name', [None])[-1]
+    passwd = params.get('pwd', [None])[-1]
+    if name is None or passwd is None:
+        return {'code': HTTPStatus.BAD_REQUEST}
 
-    client = DBClient('/tmp/bc_ipc')
-    request = db_proto.Request(method='NEWUSR', params={'name': name,
-                                                        'passwd': passwd})
+    response = {
+        'code': HTTPStatus.OK,
+        'headers': []
+    }
+    request = db_proto.Request(method='NEWUSR',
+                               params={'name': name,
+                                       'passwd': passwd})
     if client.send(request).code == db_proto.DBRespCode.OK:
-        response = b'HTTP/1.1 201\r\n'
+        response['headers'].append(('X-Reg-status', 'OK'))
+    else:
+        response['headers'].append(('X-Reg-status', 'FAIL'))
     return response

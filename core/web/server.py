@@ -1,4 +1,4 @@
-from socketserver import TCPServer
+from http.server import HTTPServer
 from core.web.handler import WebHandler
 
 
@@ -9,10 +9,12 @@ class WebServer:
 
     def start(self):
         HOST, PORT = self.config['host'], self.config['port']
-        TCPServer.allow_reuse_address = True
+        HTTPServer.allow_reuse_address = True
+        HTTPServer.version = 'BicycleWEB/0.1b'
+        HTTPServer.www_dir = '/home/alea/bicycle/www'
         self.logger.info('Starting server on {}:{}'.format(HOST, PORT))
         WebHandler.logger = self.logger
-        self.server = TCPServer((HOST, PORT), WebHandler)
+        self.server = HTTPServer((HOST, PORT), WebHandler)
         try:
             self.server.serve_forever()
         except KeyboardInterrupt:

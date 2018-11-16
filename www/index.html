@@ -1,32 +1,44 @@
+<!DOCTYPE html>
 <html>
   <head>
-    <title>SyncMessage</title>
-    <script src="/js/login.js"></script>
+    <title>Bicycle chat</title>
+    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/homepage.css">
+    <script type="text/javascript" src="/js/auth.js"></script>
   </head>
-
-  <body bgcolor=white>
-    <h1>SyncMessage</h1>
-    <br>
-    <a href="/reg/">Create account</a>
-    <div id="logNickname" align="right" hidden=""></div>
-    <button id= "logOutButton" onclick="logOut()" hidden="">Log out</button>
-    <br><br>
-
-    <p id="logApprovement"></p>
-
-    <div id="logArea" hidden="">
-      <script type="text/javascript">controleLogArea("logArea");</script>
-      <p>Login:</p>
-      <form id="loginform" action="javascript:void(0);">
-        Nickname: <input type="text" name="nickname" placeholder="Enter Nickname"><br>
-        Password: <input type="password" name="passwd" placeholder="Enter Password"><br>
-        <input type="button" onclick="logIn()" value="Log in">
-       </form>
+  <body>
+    <div class="central">
+    <!-- Header part -->
+      <div class="head">
+        <div class="head_title">
+          <pre class="head_title_text">Bicycle</pre>
+        </div>
+        <div class="menubar">
+          <a class="menubutton" href="/">Home
+          <a class="menubutton" href="/about">About
+          <a class="menubutton right" href="/" id="logOutButton" onclick="logOut()">Logout
+          <a class="menubutton right" href="/account" id="accImg">
+            <img src="/img/acc_logo.png" height="20"></a>
+          <a class="menubutton right" href="/reg" id="newAccButton">Create account</a>
+        </div>
+      </div>
+    <!-- Header part -->
+    <!-- Content part -->
+      <div class="content">
+        <div class="form_container" id="logformContainer">
+            <form id="loginForm" action="javascript:void(0);">
+              <input class="log_field" type="text" name="nickname" placeholder="Nickname"><br>
+              <input class="log_field" type="password" name="passwd" placeholder="Password">
+             </form>
+            <button class="login_button" onclick="logIn()">Log in</button>
+          <p id="logApprovement"></p>
+        </div>
+        <p style="text-align: center; margin: 50px;">
+          <button id="chatButton" type="button" class="chat_button" onclick="window.location='/chat';">Start chat!</button>          
+        </p>
+      </div>
+    <!-- Content part -->
     </div>
-
-    <script type="text/javascript">
-      checkSsid();
-    </script>
-
+    <script type="text/javascript">checkSsid();</script>
   </body>
 </html>

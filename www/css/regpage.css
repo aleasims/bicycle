@@ -1,0 +1,29 @@
+.regform_container {
+	background-color: #F0810F;
+	margin-top: 10px;
+	margin-left: 20px;
+	margin-right: 30%;	
+	border: 1px solid white;
+	border-radius: 3px;
+	text-align: left;
+	padding: 25px 35px 25px 25px;
+}
+.log_field {
+	border: 1px solid #d3d9de;
+	border-radius: 3px;
+	font-size: 13px;
+	height: 20px;
+	width: 230px;
+	margin-bottom: 15px;
+	padding: 6px 12px 8px;
+}
+.reg_button {
+	background-color: #063852;
+	width: 150px;
+	height: 35px;
+	color: white;
+	border: 1px solid #063852;
+	border-radius: 3px;
+	padding: 6px 12px;
+	cursor: pointer;
+}

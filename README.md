@@ -1,14 +1,48 @@
 # bicycle
-Web chat with crypto encapsulation
+Web chat with crypto
 
-## Running
-Starts on Python 3.x
+## Требования
+Версия Python: `>=Python3.5`
+
+В модуле `DBManager` используется модуль `tinydb`. Установить его можно через `pip`:
+
 ```
-python server.py
+pip install tinydb
 ```
 
-## Текущее видение
-Видимо, вполне удовлетворительным вариантом будет использование TCPServer 
-https://docs.python.org/3/library/socketserver.html#socketserver.TCPServer
-или его наследников HttpServer.
-В репозитории сейчас залит `server.py` - example того, как выглядит простой сервер на сокетах. В реализации TCPServer написано примерно тоже самое.
+## Конфигурация
+`general`:
+
+- `modules` - список запускаемых модулей
+
+`web_server`:
+
+- `host` - адрес хоста web-сервера
+
+- `port` - порт web-сервера
+
+- `www_dir` - директория с контентом сайта
+
+`db_server`:
+
+- `storage_path` - директория статических файлов приложения
+
+- `type` - тип запуска сервера (пока не используется)
+
+- `ipc_path` - адрес unix-сокета, на котором слушает db-сервер
+
+- `connection_timeout` - таймаут операций, после которого сервер отклоняет клиента
+
+- `session_exp_time` - максимальная длительность сессии пользователя приложения
+
+
+## Запуск
+```
+python bicycle.py
+```
+
+
+## Текущее положение дел
+Сервер худо-бедно живет.
+
+Текущая задача: чат-application (создание чата, longpoll, процесс шифрования)

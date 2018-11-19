@@ -24,3 +24,13 @@ def load_config(file_name):
     config_dir = os.path.join(sys.path[0], 'config')
     path = os.path.join(config_dir, file_name)
     return json.load(open(path))
+
+
+def format(obj, max_size):
+    # Slicer
+    # Supports in cases of large output
+    tmp = obj.__repr__()
+    if len(tmp) > max_size:
+        tmp = tmp[:max_size]
+        tmp += '...'
+    return tmp

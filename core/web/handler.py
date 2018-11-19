@@ -13,6 +13,8 @@ DEFAULT_ENCODING = 'utf-8'
 
 
 class WebHandler(SimpleHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+
     def do_POST(self):
         if self.headers['Content-length'] is None:
             self.send_response(HTTPStatus.LENGTH_REQUIRED)

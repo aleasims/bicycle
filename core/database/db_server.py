@@ -8,7 +8,7 @@ from core.database.db_wrapper import DBWrapper
 
 class DBServer:
     '''
-    Accepts queries to database and 
+    Accepts queries to database and
     sends them to handling into DB (wrapper)
     '''
     def __init__(self, config, logger):
@@ -21,7 +21,8 @@ class DBServer:
 
         self.BACKLOG = 5
         self.BUFSIZE = 1024
-        self.MAX_REQUEST_LEN = 2048
+
+        self.MAX_REQUEST_LEN = db_proto.MAX_REQUEST_LEN
         self.DELIMITER = db_proto.DELIMITER
 
     def start(self):

@@ -7,13 +7,16 @@ Performs serialization job and parse
 # TODO: think of another `EOS`
 from urllib import parse
 from enum import Enum
+from core import common
 
 
-EOS = '\n'
+EOM = '\r\n'
 ENCODING = 'utf-8'
-DELIMITER = bytes(EOS, ENCODING)
+DELIMITER = bytes(EOM, ENCODING)
 SEP = '|'
 SPACE = ' '
+MAX_REQUEST_LEN = 1024
+MAX_REPR_LEN = 30
 
 
 class DBRespCode(Enum):
@@ -26,88 +29,117 @@ class Error(Exception):
 
 
 class ProtoMessage:
-    def __init__(self, _bytes=None):
-        if _bytes:
-            self._bytes = _bytes
-            self._parse()
-            return
+    def __init__(self):
         raise Error('Unspecified ProtoMessage')
 
-    @property
-    def bytes(self):
-        if not hasattr(self, '_bytes'):
-            self._pack()
-        return self._bytes
+    def parse(self, _bytes):
+        _str = self.decode(_bytes)
+        identificator, additions = self.defragment(_str)
+        return identificator, additions
 
-    def _pack_fragments(self, fragments):
-        if fragments[1]:
-            self._bytes = bytes(SPACE.join(fragments) + EOS, ENCODING)
-        else:
-            self._bytes = bytes(fragments[0] + EOS, ENCODING)
-
-    def _defragment(self):
+    def decode(self, _bytes):
+        if not (isinstance(_bytes, bytes) or isinstance(_bytes, bytearray)):
+            raise Error('Invalid argument, byte-like expected')
         try:
-            decoded = self.bytes.decode(ENCODING)
+            _str = _bytes.decode(ENCODING)
         except UnicodeDecodeError:
             raise Error('Failed to decode bytes')
-        if EOS not in decoded:
-            raise Error('No EOS in the end')
-        stripped = decoded.split(EOS, 1)[0]
+        return _str
+
+    def defragment(self, string):
+        if EOM not in string:
+            raise Error('No EOM in the end')
+        stripped = string.split(EOM, 1)[0]
         splitted = stripped.split(SPACE, 1)
         if len(splitted) < 2:
             splitted.append('')
         return splitted
 
-    def _pack(self):
-        raise NotImplementedError
-
-    def _parse(self):
-        raise NotImplementedError
+    def pack_fragments(self, fragments):
+        tmp = fragments[0]
+        if fragments[1]:
+            tmp = SPACE.join([tmp, fragments[1]])
+        tmp += EOM
+        return tmp
 
 
 class Request(ProtoMessage):
-    def __init__(self, _bytes=None, method='', params={}):
-        if method:
-            if type(method) != str or not method.isalpha():
-                raise Error('Invalid method name')
-            self.method = method
-            if type(params) != dict:
-                raise Error('Params should be a dict instance')
-            self.params = params
-            return
-        super().__init__(_bytes)
+    def __init__(self, _bytes=None, method=None, params={}):
+        if _bytes is not None:
+            self.method, self.params = self.parse(_bytes)
+            self.bytes = self.pack(self.method, self.params)
+        elif method is not None:
+            self.bytes = self.pack(method, params)
+            self.method, self.params = self.parse(self.bytes)
+        else:
+            super().__init__()
 
-    def _parse(self):
-        self.method, params_string = self._defragment()
-        self.params = parse.parse_qs(params_string)
+    def __repr__(self):
+        return '<{}.{} method={} params={} bytes={}>'.format(
+            self.__class__.__bases__[0].__name__,
+            type(self).__name__, self.method,
+            common.format(self.params, MAX_REPR_LEN),
+            common.format(self.bytes, MAX_REPR_LEN))
 
-    def _pack(self):
-        param_list = []
-        for key, value in self.params.items():
-            param_list.append('='.join([key, value]))
-        fragments = [self.method, '&'.join(param_list)]
-        self._pack_fragments(fragments)
+    def parse(self, _bytes):
+        method, params_string = super().parse(_bytes)
+        method = self.validate_method(method)
+        params = parse.parse_qs(params_string)
+        return method, params
+
+    def pack(self, method, params):
+        method = self.validate_method(method)
+        if type(params) != dict:
+            raise Error('Params should be a dict instance')
+        params_string = parse.urlencode(params, doseq=True)
+        _str = self.pack_fragments([method, params_string])
+        return bytes(_str, ENCODING)
+
+    def validate_method(self, method):
+        if type(method) != str or not method or not method.isalpha():
+            raise Error('Invalid method name')
+        if not method.isupper():
+            method = method.upper()
+        return method
+
+    def decode(self, _bytes):
+        _str = super().decode(_bytes)
+        if len(_str) > MAX_REQUEST_LEN:
+            raise Error('Request too long')
+        return _str
 
 
 class Response(ProtoMessage):
     def __init__(self, _bytes=None, code=None, data=[]):
-        if code:
-            if not type(code) == DBRespCode:
-                raise Error('Unsupported code')
+        if _bytes is not None:
+            self.code, self.data = self.parse(_bytes)
+            self.bytes = _bytes
+        elif code is not None:
+            self.bytes = self.pack(code, data)
             self.code = code
-            if not type(data) == list:
-                raise Error('Data should be a list instance')
             self.data = data
-            return
-        super().__init__(_bytes)
+        else:
+            super().__init__()
 
-    def _parse(self):
-        code_string, data_string = self._defragment()
+    def __repr__(self):
+        return '<{}.{} code={} params={} bytes={}>'.format(
+            self.__class__.__bases__[0].__name__,
+            type(self).__name__, self.code.name,
+            common.format(self.data, MAX_REPR_LEN),
+            common.format(self.bytes, MAX_REPR_LEN))
+
+    def parse(self, _bytes):
+        code_string, data_string = super().parse(_bytes)
         if code_string not in DBRespCode.__members__:
-            raise Error('Unsupported code')
-        self.code = getattr(DBRespCode, code_string)
-        self.data = data_string.split(SEP)
+            raise Error('Invalid code')
+        code = getattr(DBRespCode, code_string)
+        data = data_string.split(SEP)
+        return code, data
 
-    def _pack(self):
-        fragments = [self.code.name, SEP.join(self.data)]
-        self._pack_fragments(fragments)
+    def pack(self, code, data):
+        if type(code) != DBRespCode:
+            raise Error('Invalid code')
+        if type(data) != list:
+            raise Error('Data should be a list instance')
+        _str = self.pack_fragments([code.name, SEP.join(data)])
+        return bytes(_str, ENCODING)

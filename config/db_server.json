@@ -1,8 +1,6 @@
 {
     "name": "DBServer",
+    "server_address": "/tmp/bc_ipc",
     "storage_path": "/tmp/bc_db",
-    "type": "local",
-    "ipc_path": "/tmp/bc_ipc",
-    "connection_timeout": 2,
     "session_exp_time": 3600
 }

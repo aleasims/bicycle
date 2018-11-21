@@ -23,7 +23,9 @@ def activate(args):
     except AttributeError:
         return {'code': HTTPStatus.NOT_IMPLEMENTED}
     else:
-        return action(args)
+        response = action(args)
+        response['headers'].append(('Connection', 'close'))
+        return response
 
 
 def login(args):

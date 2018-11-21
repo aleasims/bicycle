@@ -10,7 +10,7 @@ class DBClient:
     def __init__(self, ipc_path):
         self.ipc_path = ipc_path
         self.bufsize = 2048
-        self.sock_timeout = 1
+        self.sock_timeout = 10
 
     def send(self, request):
         query = request.bytes
@@ -20,6 +20,8 @@ class DBClient:
             ipc.connect(self.ipc_path)
         except socket.timeout:
             raise ClientError('DB is not answering')
+        except BlockingIOError:
+            pass
 
         try:
             ipc.sendall(query)
@@ -28,6 +30,8 @@ class DBClient:
                 ipc.sendall(query)
             except InterruptedError:
                 raise ClientError('Sending query malformed')
+        except OSError:
+            pass
 
         response = self._recv(ipc)
         ipc.close()

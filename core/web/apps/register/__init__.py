@@ -22,7 +22,7 @@ def activate(args):
 
     response = {
         'code': HTTPStatus.OK,
-        'headers': []
+        'headers': [('Connection', 'close')]
     }
     request = db_proto.Request(method='NEWUSR',
                                params={'name': name,

@@ -13,6 +13,8 @@ DEFAULT_ENCODING = 'utf-8'
 
 
 class WebHandler(SimpleHTTPRequestHandler):
+    protocol_version = 'HTTP/1.1'
+
     def do_POST(self):
         if self.headers['Content-length'] is None:
             self.send_response(HTTPStatus.LENGTH_REQUIRED)
@@ -114,6 +116,8 @@ class WebHandler(SimpleHTTPRequestHandler):
         app = None
         try:
             app = importlib.import_module('core.web.apps.' + args['app'])
+            if not hasattr(app, 'activate'):
+                raise ImportError
         except ImportError:
             self.send_error(HTTPStatus.NOT_IMPLEMENTED)
             return

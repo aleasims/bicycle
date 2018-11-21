@@ -114,6 +114,8 @@ class WebHandler(SimpleHTTPRequestHandler):
         app = None
         try:
             app = importlib.import_module('core.web.apps.' + args['app'])
+            if not hasattr(app, 'activate'):
+                raise ImportError
         except ImportError:
             self.send_error(HTTPStatus.NOT_IMPLEMENTED)
             return

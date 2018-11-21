@@ -11,7 +11,7 @@ from core.database.db_proto import DBRespCode
 class DBWrapper:
     '''
     User and Message database API class
-    In fact - wrapper from TinyDB, transformint it for context database
+    In fact - wrapper from TinyDB, transforming it for context database
     '''
     def __init__(self, logger, storage_path, exp_time):
         self.logger = logger
@@ -19,7 +19,7 @@ class DBWrapper:
         self.storage_path = storage_path
         self.db = TinyDB(os.path.join(storage_path, 'data.json'))
         self.users = self.db.table('users')
-        # add IP
+        self.channels = self.db.table('channels')
 
     def __log_err(self, err):
         self.logger.error(err)
@@ -40,11 +40,13 @@ class DBWrapper:
     # - accepts `params` argument - dict-like object
 
     def CHECKSSID(self, params):
+        # Second call to DB should be by doc id
         client_ip = params['client_ip'][-1]
         ssid = params['ssid'][-1]
         user = self.users.get(Query()['SSID'] == ssid)
         if user and user['client_ip'] == client_ip and \
                 (int(time.time()) - user['lastAct'] < self.EXPIRE_TIME):
+            self.users.update({'lastAct': int(time.time())}, Query()['SSID'] == ssid)
             return db_proto.Response(code=DBRespCode.OK, data=[user['name']])
         return db_proto.Response(code=DBRespCode.FAIL)
 
@@ -97,6 +99,17 @@ class DBWrapper:
         for user in self.users:
             data.append(user['name'])
         return db_proto.Response(code=DBRespCode.OK, data=data)
+
+    def LISTACTIVE(self, params):
+        data = self.users.search(Query().chatting == True)
+        return db_proto.Response(code=DBRespCode.OK, data=data)
+
+    def MKUSRACTIVE(self, params):
+        ssid = params['ssid'][-1]
+        self.users.update({'chatting': True,
+                           'lactReq': int(time.time())},
+                          Query()['SSID'] == ssid)
+        return db_proto.Response(code=DBRespCode.OK)
 
     def DELALLUSR(self, params):
         raise Exception('DELALLUSR tried')

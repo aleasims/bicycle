@@ -3,7 +3,7 @@ import json
 from io import BytesIO
 from http import HTTPStatus
 from urllib import parse
-from core.web.common import extract_ssid
+from core.web.apps.common import extract_ssid, valid_session
 from core.database import db_proto
 from core.database.db_proto import DBRespCode
 from core.database.db_client import DBClient
@@ -27,18 +27,28 @@ def activate(args):
     else:
         response = action(args)
         response['headers'].append(('Connection', 'close'))
+        return response
 
 
 def makeactive(args):
     response = {
         'code': HTTPStatus.OK,
-        'headers': []
+        'headers': [('Content-type', 'application/json')]
     }
-    mk_active = db_proto.Request(method='MKUSRCHAT',
-                                 params={'ssid': extract_ssid(args)})
-    resp = cli.send(mk_active)
-    if resp.code != DBRespCode.OK:
-        data = 
+    data = {'activation': False}
+
+    ssid = extract_ssid(args)
+    uid = valid_session(cli, ssid, ip=args['client'][0])
+    if uid is not None:
+        mk_active = db_proto.Request(method='MKUSRACTIVE',
+                                     params={'uid': uid})
+        data = {'activation': cli.send(mk_active).code == DBRespCode.OK}
+    else:
+        data['reason'] = 'Invalid session'
+
+    data = bytes(json.dumps(data), 'utf-8')
+    response['headers'].append(('Content-length', str(len(data))))
+    response['data'] = BytesIO(data)
     return response
 
 
@@ -47,8 +57,19 @@ def getonlineusr(args):
         'code': HTTPStatus.OK,
         'headers': [('Content-type', 'application/json')]
     }
-    online_usr = db_proto.Request(method='LISTACTIVE')
-    resp = cli.send(online_usr)
+    cli.send(db_proto.Request(method='REVISACTIVE'))
+    resp = cli.send(db_proto.Request(method='LISTACTIVE'))
+    ssid = extract_ssid(args)
+    if ssid:
+        cookiecheck = db_proto.Request(method='CHECKSSID',
+                                       params={'ssid': ssid.value,
+                                               'client_ip': args['client'][0]})
+        if cli.send(cookiecheck).code == db_proto.DBRespCode.OK:
+            mk_active = db_proto.Request(method='MKUSRACTIVE',
+                                         params={'ssid': ssid.value})
+            data = bytes(json.dumps(
+                {'Activation': cli.send(mk_active).code == DBRespCode.OK}),
+                'utf-8')
     if resp.code != db_proto.DBRespCode.OK:
         return response
     data = bytes(json.dumps(resp.data), 'utf-8')

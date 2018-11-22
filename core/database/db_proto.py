@@ -8,6 +8,7 @@ Performs serialization job and parse
 from urllib import parse
 from enum import Enum
 from core import common
+import json
 
 
 EOM = '\r\n'
@@ -84,7 +85,7 @@ class Request(ProtoMessage):
     def parse(self, _bytes):
         method, params_string = super().parse(_bytes)
         method = self.validate_method(method)
-        params = parse.parse_qs(params_string)
+        params = self.parse_params(params_string)
         return method, params
 
     def pack(self, method, params):
@@ -102,6 +103,10 @@ class Request(ProtoMessage):
             method = method.upper()
         return method
 
+    def parse_params(self, params_string):
+        params = parse.parse_qs(params_string)
+        return {key: value.pop() for key, value in params.items()}
+
     def decode(self, _bytes):
         _str = super().decode(_bytes)
         if len(_str) > MAX_REQUEST_LEN:
@@ -110,6 +115,9 @@ class Request(ProtoMessage):
 
 
 class Response(ProtoMessage):
+    '''
+    `data` - must be json-serializable
+    '''
     def __init__(self, _bytes=None, code=None, data=[]):
         if _bytes is not None:
             self.code, self.data = self.parse(_bytes)
@@ -133,7 +141,7 @@ class Response(ProtoMessage):
         if code_string not in DBRespCode.__members__:
             raise Error('Invalid code')
         code = getattr(DBRespCode, code_string)
-        data = data_string.split(SEP)
+        data = json.loads(data_string)
         return code, data
 
     def pack(self, code, data):
@@ -141,5 +149,5 @@ class Response(ProtoMessage):
             raise Error('Invalid code')
         if type(data) != list:
             raise Error('Data should be a list instance')
-        _str = self.pack_fragments([code.name, SEP.join(data)])
+        _str = self.pack_fragments([code.name, json.dumps(data)])
         return bytes(_str, ENCODING)

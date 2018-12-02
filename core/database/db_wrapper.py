@@ -3,7 +3,9 @@ import uuid
 import time
 import traceback
 from tinydb import TinyDB, Query
+from tinydb.database import Document
 from tinydb.operations import delete
+from tinydb.storages import MemoryStorage
 from core.database import db_proto
 from core.database.db_proto import DBRespCode
 
@@ -15,17 +17,20 @@ class DBWrapper:
     '''
     def __init__(self, logger, storage_path, exp_time):
         self.logger = logger
-        self.EXPIRE_TIME = exp_time
+        self.SESS_EXP_TIME = exp_time
         self.ABANDON_TIME = 60
-        self.storage_path = storage_path
+
         self.db = TinyDB(os.path.join(storage_path, 'data.json'))
-        self.tmp = TinyDB(os.path.join(storage_path, 'tmp.json'))
         self.users = self.db.table('users')
+        self.private = self.db.table('private')
+
+        self.tmp = TinyDB(os.path.join(storage_path, 'tmp.json'))
+        self.sessions = self.tmp.table('sessions')
         self.channels = self.tmp.table('channels')
 
     def __log_err(self, err):
-        self.logger.error(err)
-        traceback.print_exc()
+        self.logger.debug('Exception during performing DB operation: {}'.format(err))
+        # traceback.print_exc()
 
     def perform(self, request):
         perform = getattr(self, request.method, None)
@@ -41,100 +46,131 @@ class DBWrapper:
     # - named with capital latin letters only
     # - accepts only (!) `params` argument - dict-like object
 
-    def GETUID(self, params):
-        key, value = params.popitem()
-        match = self.users.search(Query()[key] == value)
-        if len(match) > 1:
+# SESSIONS
+
+    def CREATESESS(self, params):
+        # Creates session for user
+        # Returns generated ssid
+        # Requires: `uid`, `client_ip`
+        #
+        for i in range(0, 10):
+            ssid = uuid.uuid4().hex
+            SSIDs = [sess['ssid'] for sess in self.sessions.all()]
+            if ssid not in SSIDs:
+                break
+        else:
+            raise Exception('Number of attempts exceeded')
+        self.sessions.upsert({'uid': params['uid'],
+                              'ssid': ssid,
+                              'clientIP': params['client_ip'],
+                              'lastUpd': int(time.time())},
+                              Query()['uid'] == params['uid'])
+        return db_proto.Response(code=DBRespCode.OK, data={'ssid': ssid})
+
+    def GETSESS(self, params):
+        # Returns session with provided ssid
+        # Requires: `ssid`
+        #
+        sess = self.sessions.get(Query()['ssid'] == params['ssid'])
+        if sess is None:
             return db_proto.Response(code=DBRespCode.FAIL)
-        uid = str(match[0].eid)
-        return db_proto.Response(code=DBRespCode.OK, data=[uid])
+        return db_proto.Response(code=DBRespCode.OK, data=sess)
 
-    def CHECKSSID(self, params):
-        # Second call to DB should be by doc id
-        client_ip = params['client_ip'][-1]
-        ssid = params['ssid'][-1]
-        user = self.users.get(Query()['SSID'] == ssid)
-        if user and user['client_ip'] == client_ip and \
-                (int(time.time()) - user['lastCheck'] < self.EXPIRE_TIME):
-            self.users.update({'lastCheck': int(time.time())}, doc_ids=[user.eid])
-            return db_proto.Response(code=DBRespCode.OK, data=[user['name']])
-        return db_proto.Response(code=DBRespCode.FAIL)
+    def ONLINEUIDS(self, params):
+        # Returns list of uids of logged users
+        # Requires: -
+        #
+        uids = [sess['uid'] for sess in self.sessions.all()]
+        return db_proto.Response(code=DBRespCode.OK, data={'uids': uids})
 
-    def USRON(self, params):
-        name = params['name'][-1]
-        client_ip = params['client_ip'][-1]
-        ssid = uuid.uuid4().hex
-        self.users.update({'logged': True,
-                           'client_ip': client_ip,
-                           'SSID': ssid,
-                           'lastCheck': int(time.time())}, Query()['name'] == name)
-        return db_proto.Response(code=DBRespCode.OK, data=[ssid])
-
-    def USROFF(self, params):
-        ssid = params['ssid'][-1]
-        self.users.update({'logged': False}, Query()['SSID'] == ssid)
-        self.users.update(delete('lastAct'), Query()['SSID'] == ssid)
-        self.users.update(delete('client_ip'), Query()['SSID'] == ssid)
-        self.users.update(delete('SSID'), Query()['SSID'] == ssid)
+    def UPDSESS(self, params):
+        # Updates lastUpd timestamp
+        # Requires: `ssid`
+        #
+        sess = self.sessions.get(Query()['ssid'] == params['ssid'])
+        if sess is None:
+            return db_proto.Response(code=DBRespCode.FAIL)
+        self.sessions.update({'lastUpd': int(time.time())},
+                             doc_ids=[sess.doc_id])
         return db_proto.Response(code=DBRespCode.OK)
 
-    def NEWUSR(self, params):
-        name = params['name'][-1]
-        passwd = params['passwd'][-1]
-        if self.users.contains(Query()['name'] == name):
-            return db_proto.Response(code=DBRespCode.FAIL)
-
-        self.users.insert({'name': name,
-                           'passwd': passwd,
-                           'registerDate': time.ctime(),
-                           'logged': False})
+    def DROPSESS(self, params):
+        # Removes session with given ssid
+        # Requires: `ssid`
+        #
+        ssid = params['ssid']
+        sess = self.sessions.get(Query()['ssid'] == ssid)
+        if sess is not None:
+            self.sessions.remove(doc_ids=[sess.doc_id])
         return db_proto.Response(code=DBRespCode.OK)
 
-    def CHECKUSR(self, params):
-        name = params['name'][-1]
-        if self.users.contains(Query()['name'] == name):
-            return db_proto.Response(code=DBRespCode.OK)
+# USER
+
+    def CREATEUSR(self, params):
+        # Create new user if possible
+        # Returns uid of created user
+        # Requires: `name`, `passwd`
+        #
+        if self.users.contains(Query()['name'] == params['name']):
+            return db_proto.Response(code=DBRespCode.FAIL)  # Name must be unique
+
+        uid = self.users.insert({'name': params['name'],
+                                 'registerDate': time.ctime()})
+        self.private.insert({'uid': uid,
+                             'passwd': params['passwd']})
+        return db_proto.Response(code=DBRespCode.OK, data={'uid': uid})
+
+    def GETUSRBYID(self, params):
+        # Returns user info for given uid
+        # Requires: `uid`
+        #
+        user = self.users.get(doc_id=params['uid'])
+        if user is None:
+            return db_proto.Response(code=DBRespCode.FAIL)
+        return db_proto.Response(code=DBRespCode.OK, data=user)
+
+    def GETNAMESBYIDS(self, params):
+        # Return user names for given uids
+        # Requires: `uids`
+        #
+        
+        names = []
+        for uid in params['uids']:
+            usr = self.users.get(doc_id=uid)
+            if usr is not None:
+                names.append((uid, usr['name']))
+        return db_proto.Response(code=DBRespCode.OK, data=names)
+
+    def GETIDBYNAME(self, params):
+        # Checks if user with provided name exists
+        # Return uid if user found
+        # Requires: `name`
+        #
+        user = self.users.get(Query()['name'] == params['name'])
+        if user is not None:
+            return db_proto.Response(code=DBRespCode.OK, data={'uid': user.doc_id})
         return db_proto.Response(code=DBRespCode.FAIL)
 
     def CHECKPWD(self, params):
-        name = params['name'][-1]
-        pwd = params['passwd'][-1]
-        user = self.users.get(Query()['name'] == name)
-        if pwd == user['passwd']:
+        # Checks if provided password is correct
+        # Requires: `uid`, `passwd`
+        #
+        record = self.private.get(Query()['uid'] == params['uid'])
+        if params['passwd'] == record['passwd']:
             return db_proto.Response(code=DBRespCode.OK)
         return db_proto.Response(code=DBRespCode.FAIL)
 
-    def LISTUSR(self, params):
-        data = []
-        for user in self.users:
-            data.append(user['name'])
-        return db_proto.Response(code=DBRespCode.OK, data=data)
-
-    def LISTACTIVE(self, params):
-        data = [
-            user['name'] for user in
-            self.users.search(Query().chatting == True)
-        ]
-        return db_proto.Response(code=DBRespCode.OK, data=data)
-
-    def REVISACTIVE(self, params):
-        active = self.users.search(Query().chatting == True)
-        for user in active:
-            if time.time() - user['lastReq'] > 120:
-                self.users.update({'chatting': False}, doc_ids=[user.eid])
-                self.users.update(delete('lastReq'), doc_ids=[user.eid])
-        return db_proto.Response(code=DBRespCode.OK)
-
-    def MKUSRACTIVE(self, params):
-        self.users.update({'chatting': True,
-                           'lastReq': int(time.time())},
-                          doc_ids=params['uid'])
-        return db_proto.Response(code=DBRespCode.OK)
-
-    def DELALLUSR(self, params):
-        raise Exception('DELALLUSR tried')
-        try:
-            self.users.purge()
+    def DELUSR(self, params):
+        # Delets user, if passwd provided correctly
+        # Requires: `uid`, `passwd`
+        #
+        record = self.private.get(Query()['uid'] == params['uid'])
+        if params['passwd'] == record['passwd']:
+            self.private.remove(doc_ids=[record.doc_id])
+            self.users.remove(doc_ids=[params['uid']])
             return db_proto.Response(code=DBRespCode.OK)
-        except Exception:
-            return db_proto.Response(code=DBRespCode.FAIL)
+        return db_proto.Response(code=DBRespCode.FAIL)
+
+# CHANNELS
+    def CREATECHANNEL(self, params):
+        pass

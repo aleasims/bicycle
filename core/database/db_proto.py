@@ -17,7 +17,7 @@ DELIMITER = bytes(EOM, ENCODING)
 SEP = '|'
 SPACE = ' '
 MAX_REQUEST_LEN = 1024
-MAX_REPR_LEN = 30
+MAX_REPR_LEN = 50
 
 
 class DBRespCode(Enum):
@@ -90,9 +90,10 @@ class Request(ProtoMessage):
 
     def pack(self, method, params):
         method = self.validate_method(method)
-        if type(params) != dict:
-            raise Error('Params should be a dict instance')
-        params_string = parse.urlencode(params, doseq=True)
+        try:
+            params_string = json.dumps(params)
+        except TypeError:
+            raise Error('Params are not serializable')
         _str = self.pack_fragments([method, params_string])
         return bytes(_str, ENCODING)
 
@@ -104,8 +105,11 @@ class Request(ProtoMessage):
         return method
 
     def parse_params(self, params_string):
-        params = parse.parse_qs(params_string)
-        return {key: value.pop() for key, value in params.items()}
+        try:
+            params = json.loads(params_string)
+        except json.JSONDecodeError:
+            raise Error('Data decoding failed')
+        return params
 
     def decode(self, _bytes):
         _str = super().decode(_bytes)
@@ -118,7 +122,7 @@ class Response(ProtoMessage):
     '''
     `data` - must be json-serializable
     '''
-    def __init__(self, _bytes=None, code=None, data=[]):
+    def __init__(self, _bytes=None, code=None, data={}):
         if _bytes is not None:
             self.code, self.data = self.parse(_bytes)
             self.bytes = _bytes
@@ -130,7 +134,7 @@ class Response(ProtoMessage):
             super().__init__()
 
     def __repr__(self):
-        return '<{}.{} code={} params={} bytes={}>'.format(
+        return '<{}.{} code={} data={} bytes={}>'.format(
             self.__class__.__bases__[0].__name__,
             type(self).__name__, self.code.name,
             common.format(self.data, MAX_REPR_LEN),
@@ -141,13 +145,18 @@ class Response(ProtoMessage):
         if code_string not in DBRespCode.__members__:
             raise Error('Invalid code')
         code = getattr(DBRespCode, code_string)
-        data = json.loads(data_string)
+        try:
+            data = json.loads(data_string)
+        except json.JSONDecodeError:
+            raise Error('Data decoding failed')
         return code, data
 
     def pack(self, code, data):
         if type(code) != DBRespCode:
             raise Error('Invalid code')
-        if type(data) != list:
-            raise Error('Data should be a list instance')
-        _str = self.pack_fragments([code.name, json.dumps(data)])
+        try:
+            data_str = json.dumps(data)
+        except TypeError:
+            raise Error('Data is not serializable')
+        _str = self.pack_fragments([code.name, data_str])
         return bytes(_str, ENCODING)

@@ -1,10 +1,9 @@
+import json
+from io import BytesIO
 from http import HTTPStatus
 from urllib import parse
-from core.database.db_client import DBClient
+from core.web.apps.common import DBClient
 from core.database import db_proto
-
-
-client = DBClient('/tmp/bc_ipc')
 
 
 def activate(args):
@@ -18,17 +17,27 @@ def activate(args):
     name = params.get('name', [None])[-1]
     passwd = params.get('pwd', [None])[-1]
     if name is None or passwd is None:
-        return {'code': HTTPStatus.BAD_REQUEST}
+        return {'code': HTTPStatus.BAD_REQUEST,
+                'headers': [('Connection', 'close')]}
 
     response = {
         'code': HTTPStatus.OK,
-        'headers': [('Connection', 'close')]
+        'headers': [('Connection', 'close'),
+                    ('Content-type', 'application/json')]
     }
-    request = db_proto.Request(method='NEWUSR',
-                               params={'name': name,
-                                       'passwd': passwd})
-    if client.send(request).code == db_proto.DBRespCode.OK:
-        response['headers'].append(('X-Reg-status', 'OK'))
+    data = {}
+
+    if DBClient.send('GETIDBYNAME', {'name': name}).code == db_proto.DBRespCode.OK:
+        data = {'status': 'NAME_TAKEN'}
     else:
-        response['headers'].append(('X-Reg-status', 'FAIL'))
+        resp = DBClient.send('CREATEUSR', {'name': name, 'passwd': passwd})
+        if resp.code == db_proto.DBRespCode.OK:
+            data = {'status': 'SUCCESSFUL',
+                    'uid': resp.data['uid']}
+        else:
+            data = {'status': 'FAILED'}
+
+    data = json.dumps(data)
+    response['headers'].append(('Content-length', str(len(data))))
+    response['data'] = BytesIO(bytes(data, 'utf-8'))
     return response

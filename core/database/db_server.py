@@ -1,10 +1,10 @@
 from socketserver import TCPServer, ThreadingMixIn, BaseRequestHandler
 import socket
 import logging
-from threading import Thread
+import threading
 import os
 import io
-from queue import Queue, Empty
+import queue
 import traceback
 from core.database.db_wrapper import DBWrapper
 from core.database import db_proto
@@ -16,13 +16,14 @@ class DBServer(ThreadingMixIn, TCPServer):
         self.server_address = config['server_address']
         self.storage_path = config['storage_path']
         self.session_exp_time = config['session_exp_time']
+        self.max_tasks = config['max_tasks']
 
-        self.queue = Queue(1000)
+        self.tasks = queue.Queue(self.max_tasks)
 
         self.address_family = socket.AF_UNIX
         self.allow_reuse_address = True
 
-        super().__init__(self.server_address, Handler, True)
+        super().__init__(self.server_address, DBProtoHandler, True)
 
     def server_bind(self):
         try:
@@ -39,31 +40,35 @@ class DBServer(ThreadingMixIn, TCPServer):
     def start(self):
         self.logger.info('Server running on {}'.format(self.server_address))
 
-        serve = Thread(target=self.serve_forever)
-        work = Thread(target=self.check_queue)
+        serve = threading.Thread(target=self.serve_forever)
+        work = threading.Thread(target=self.do_tasks)
         serve.start()
         work.start()
 
-    def check_queue(self):
+    def do_tasks(self):
         while True:
-            query = self.queue.get()
-            request, callback = query
-            response = self.wrapper.perform(request)
-            conn = callback(request, response)
-            self.shutdown_request(conn)
+            try:
+                request, callback = self.tasks.get()  # blocking call
+                response = self.wrapper.perform(request)
+                self.logger.info('{} - {}'.format(request.method, response.code))
+                conn = callback(response)
+                self.shutdown_request(conn)
+            except Exception as e:
+                self.logger.info('Exception during task performing - {}'.format(e))
+                if self.logger.level == logging.DEBUG:
+                    print('*' * 80)
+                    traceback.print_exc()
+                    print('*' * 80)
 
     def process_request(self, request, client_address):
         # Need to override because no need to shutdown request
         self.finish_request(request, client_address)
 
-    def service_actions(self):
-        pass
-
-    def add_query(self, request, callback):
-        self.queue.put((request, callback))
+    def push_task(self, request, callback):
+        self.tasks.put_nowait((request, callback))
 
 
-class Handler(BaseRequestHandler):
+class DBProtoHandler(BaseRequestHandler):
     MAX_REQUEST_LEN = db_proto.MAX_REQUEST_LEN
     DELIMITER = db_proto.DELIMITER
     BUFSIZE = 1024
@@ -71,19 +76,20 @@ class Handler(BaseRequestHandler):
     def setup(self):
         self.raw_request = self.read_request(self.request)
 
-    def callback(self, request, response):
+    def callback(self, response):
         self.request.sendall(response.bytes)
-        self.server.logger.info('{} - {}'.format(request.method, response.code))
         return self.request
 
     def handle(self):
         try:
             request = db_proto.Request(self.raw_request)
-            self.server.add_query(request, self.callback)
+            self.server.push_task(request, self.callback)
         except Exception as e:
             self.server.logger.info('Exception during hadnling - {}'.format(e))
             if self.server.logger.level == logging.DEBUG:
+                print('*' * 80)
                 traceback.print_exc()
+                print('*' * 80)
 
     def read_request(self, conn):
         request = bytearray()

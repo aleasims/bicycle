@@ -2,6 +2,12 @@ from http.cookies import BaseCookie
 import datetime
 from time import mktime
 from wsgiref.handlers import format_date_time
+from core.database import db_client
+
+
+# Allows apps to make DB requests using `send()` method
+# `send()` accepts 2 params: method(str), params(dict)
+DBClient = db_client.Client('/tmp/bc_ipc')
 
 
 def extract_ssid(args):

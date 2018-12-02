@@ -2,5 +2,6 @@
     "name": "DBServer",
     "server_address": "/tmp/bc_ipc",
     "storage_path": "/tmp/bc_db",
-    "session_exp_time": 3600
+    "session_exp_time": 3600,
+    "max_tasks": 100
 }

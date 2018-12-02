@@ -1,4 +1,4 @@
-from core.web.apps.common import DBClient, extract_ssid
+from core.web.apps.common import DBClient
 
 
 def valid(ssid, ip):

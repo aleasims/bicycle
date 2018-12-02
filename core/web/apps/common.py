@@ -14,7 +14,8 @@ def extract_ssid(args):
     cookie_str = args['headers'].get('Cookie')
     cookie = BaseCookie(cookie_str)
     ssid = cookie.get('SSID', None)
-    return ssid
+    if ssid is not None and hasattr(ssid, 'value'):
+        return ssid.value
 
 
 def get_expires_time(expires_time):

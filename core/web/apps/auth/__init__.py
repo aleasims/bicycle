@@ -28,10 +28,9 @@ def activate(args):
     except AttributeError:
         response['code'] = HTTPStatus.NOT_IMPLEMENTED
     else:
-        response['code'] = HTTPStatus.OK
-
         data = action(args, response)
         if data:
+            response['code'] = HTTPStatus.OK
             data = json.dumps(data)
             response['headers'].append(('Content-type', 'application/json;charset={}'.format(ENC)))
             response['headers'].append(('Content-length', str(len(data))))
@@ -79,7 +78,7 @@ def checkssid(args, response):
     # GET /app/auth?action=checkssid
 
     data = {'valid': False}
-    ssid = extract_ssid(args).value
+    ssid = extract_ssid(args)
     if ssid is not None and session.valid(ssid, args['client'][0]):
         data = {'valid': True}
         response['headers'].append(('Set-Cookie', 'SSID={};Expires={}'.format(
@@ -93,6 +92,6 @@ def logout(args, response):
     #
     # Request example:
     # GET /app/auth?action=logout
-    if not session.drop(extract_ssid(args).value):
+    if not session.drop(extract_ssid(args)):
         return {'status': 'FAILED'}
     return {'status': 'SUCCESSFUL'}

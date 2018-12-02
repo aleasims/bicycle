@@ -34,6 +34,7 @@ body {
 	background-color: #F0810F;
 }
 .menubutton {
+	cursor: pointer;
 	display: inline-block;
 	line-height: 40px;
 	text-align: center;

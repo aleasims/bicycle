@@ -2,6 +2,7 @@
 	"python_version": 3.6,
 	"modules": [
 		"web_server",
-		"db_server"
+		"db_server",
+		"ids"
 	]
 }

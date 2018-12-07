@@ -4,11 +4,15 @@ from io import BytesIO
 from http import HTTPStatus
 from urllib import parse
 from core.web.apps.common import DBClient, extract_ssid, get_expires_time
+from core.web.apps.auth import session
+from core.web.apps.chat import longpoll
 
 
 THIS_APP = sys.modules[__name__]
 DEFAULT_ACTION = 'makeactive'
 ENC = 'utf-8'
+MAX_TIMEOUT = 120
+MIN_TIMEOUT = 5
 
 
 def activate(args):
@@ -44,5 +48,30 @@ def getonlineusr(args, response):
     dbresp = DBClient.send('GETNAMESBYIDS', {'uids': dbresp.data['uids']})
     if dbresp.code.name != 'OK':
         return data
-    data['online'] = dbresp.data
+    data['online'] = [{'uid': usr[0], 'name': usr[1]} for usr in dbresp.data]
     return data
+
+def accept(args, response):
+    params = parse.parse_qs(args.get('params', ''))
+    timeout = params.get('timeout', [MAX_TIMEOUT]).pop()
+    timeout = timeout if timeout <= MAX_TIMEOUT else MAX_TIMEOUT
+    timeout = timeout if timeout >= MIN_TIMEOUT else MIN_TIMEOUT
+
+    ssid = extract_ssid(args)
+    if ssid is not None and session.valid(ssid, args['client'][0]):
+        uid = DBClient.send('GETSESS', {'ssid': ssid}).data['uid']
+
+        def get_new_chnls():
+            resp = DBClient.send('FINDCHNL', {'uid': uid, 'status': 'REQ'})
+            if resp.code.name == 'OK' and resp.data:
+                return resp.data
+
+        new_chnls = longpoll.wait(get_new_chnls,
+                                  test=lambda x: x is not None,
+                                  timeout=timeout,
+                                  default=[])
+        data = {'accepted': new_chnls}
+        return data
+    else:
+        response['code'] = HTTPStatus.FORBIDDEN
+        return

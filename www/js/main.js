@@ -61,3 +61,28 @@ function getCookie(name) {
 function eraseCookie(name) {
     document.cookie = name + "=0; expires=Thu, 18 Dec 1999 12:00:00 UTC";
 }
+
+function clearOnlineList() {
+    var list = document.getElementById("leftChatSectionContainerSupp");
+    var l = list.length;
+    for (var i = list.children.length - 1; i >= 0; i--) {
+        list.removeChild(list.children[i]);
+    }
+}
+
+function addOnlineList(elem) {
+    var list = document.getElementById("leftChatSectionContainerSupp");
+    list.appendChild(elem);
+}
+
+function reloadOnlineList(list) {
+    clearOnlineList();
+    for (var i = list.length - 1; i >= 0; i--) {
+        var elem = document.createElement("div");
+        elem.id = "userField_" + list[i]["uid"].toString();
+        elem.setAttribute("class", "onlineUserField");
+        elem.setAttribute("onclick", "requestChannel();");
+        elem.innerHTML = list[i]["name"];
+        addOnlineList(elem);
+    }
+}

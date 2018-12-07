@@ -32,8 +32,6 @@
             <div id="leftChatSectionHeader">Users</div>
             <div id="leftChatSectionContainer">
               <div id="leftChatSectionContainerSupp">
-                <div id="userField_1" class="onlineUserField" onclick="requestChannel();">user1</div>
-                <div id="userField_2" class="onlineUserField" onclick="requestChannel();">user2</div>
               </div>
             </div>
           </div>
@@ -43,7 +41,7 @@
               <button id="sendButton" type="button" onclick="sendMessage();">Send</button>
             </div>
             <div id="messagesContainer">
-              <div id="chatEmptyMsg" class="serviceMsg">First create channel</div>              
+              <div id="chatEmptyMsg" class="serviceMsg">First create channel with user</div>              
             </div>
           </div>
         </div>
@@ -69,6 +67,8 @@
               sendMessage();
           }
       });
+      updateOnlineUsers(10000);
+      acceptChannelRequest();
     </script>
   </body>
 </html>

@@ -71,7 +71,7 @@ function logIn() {
                 if (response.status === "SUCCESSFUL") {
                     approvement.innerHTML = "You are logged in!";
                     logged = true;
-                    setTimeout(window.location.reload(), 3000);
+                    window.location.reload();
                 } else {
                     switch (response.msg) {
                         case "Identification failed":
@@ -119,7 +119,7 @@ function checkSsid(callback) {
     checker.send();
 };
 
-function logOut(callback) {
+function logOut() {
     var http = new XMLHttpRequest();
     http.onreadystatechange = function() {
         if (this.readyState == 4 && this.status == 200) {
@@ -133,7 +133,7 @@ function logOut(callback) {
         }
         controlElements(logged);
         eraseCookie("SSID");
-        window.location.reload();
+        setTimeout(() => {window.location.reload()}, 100);
     }
     http.open("GET", "/app/auth?action=logout", true);
     http.send();

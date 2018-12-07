@@ -59,7 +59,7 @@ def accept(args, response):
 
     ssid = extract_ssid(args)
     if ssid is not None and session.valid(ssid, args['client'][0]):
-        uid = DBClient.send('GETSESS', {'ssid': ssid}).data['uid']
+        uid = session.uid(ssid)
 
         def get_new_chnls():
             resp = DBClient.send('FINDCHNL', {'uid': uid, 'status': 'REQ'})

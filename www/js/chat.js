@@ -27,14 +27,12 @@ function acceptChannelRequest() {
                 if (accepted.length != 0) {
                     console.log(accepted);
                     for (var i = accepted.length - 1; i >= 0; i--) {
-                        if (confirm(`${accepted[i]['users'][0]['name']} wants to chat with you! Go chat?`)) {
-                            console.log('Starting channel between')
-                            console.log(accepted[i]['users'][0]['uid'])
-                            console.log('and')
-                            console.log(accepted[i]['users'][1]['uid'])
+                        agree = confirm(`${accepted[i]['users'][0]['name']} wants to chat with you! Go chat?`)
+                        if (agree) {
+                            console.log('create channel next');
                         }
                         else {
-                            dismissChannel();
+                            dismissChannel(accepted[i]['chid']);
                         }
                     }
                 }
@@ -46,6 +44,12 @@ function acceptChannelRequest() {
     api.send();
 }
 
-function dismissChannel() {
-    console.log('Channel request dismissed');
+function dismissChannel(chid) {
+    var api = new XMLHttpRequest();
+    api.onreadystatechange = function() {
+        if (this.readyState == 4) {
+        }
+    }
+    api.open("GET", "/app/chat?action=dismiss", true);
+    api.send();
 }

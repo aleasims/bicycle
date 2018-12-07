@@ -26,3 +26,6 @@ def create(uid, ip):
 def drop(ssid):
     return DBClient.send('DROPSESS',
         {'ssid': ssid}).code.name == 'OK'
+
+def uid(ssid):
+    return DBClient.send('GETSESS', {'ssid': ssid}).data.get('uid')

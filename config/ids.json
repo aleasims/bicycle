@@ -1,0 +1,4 @@
+{
+	"alert_file_path": "/var/log/snort/alert",
+    "server_ip_address": "239.255.255.250"
+}

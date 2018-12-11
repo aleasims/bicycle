@@ -3,5 +3,7 @@
 	"version": "0.1b",
 	"host": "",
 	"port": 8080,
-	"www_dir": "/home/alea/bicycle/www"
+	"www_dir": "/home/alea/bicycle/www",
+	"db_address": "/tmp/bc_db",
+	"auth_session_exp_time": 3600
 }

@@ -6,6 +6,7 @@ import traceback
 import urllib.parse
 import email.utils
 from http import HTTPStatus
+from http.cookies import SimpleCookie
 from http.server import SimpleHTTPRequestHandler
 
 
@@ -14,6 +15,23 @@ DEFAULT_ENCODING = 'utf-8'
 
 class WebHandler(SimpleHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
+    SESS_EXP_TIME = 0
+
+    def authorize(self):
+        cookie_str = self.headers['Cookie']
+        print(self.headers)
+        cookie = SimpleCookie(cookie_str)
+        ssid = cookie.get('bi_ssid')
+        print(ssid)
+
+    def do_GET(self):
+        self.authorize()
+        f = self.send_head()
+        if f:
+            try:
+                self.copyfile(f, self.wfile)
+            finally:
+                f.close()
 
     def do_POST(self):
         if self.headers['Content-length'] is None:
@@ -31,7 +49,7 @@ class WebHandler(SimpleHTTPRequestHandler):
                 f.close()
 
     def version_string(self):
-        return self.server.version
+        return 'Bicycle/' + self.server.version
 
     def log_request(self, code='-', size='-'):
         message = '{}:{} - {} {} - {}'.format(
@@ -73,6 +91,7 @@ class WebHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
                 return
             self.send_response(HTTPStatus.OK)
+            self.send_header('Set-Cookie', 'bi_ssid=123; Max-Age: 10')
             self.send_header('Content-type', self.guess_type(path))
             self.send_header('Content-Length', str(os.fstat(f.fileno())[6]))
             self.send_header('Last-Modified', self.date_time_string(mtime))

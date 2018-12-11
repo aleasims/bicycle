@@ -6,9 +6,9 @@ import traceback
 import urllib.parse
 import email.utils
 from http import HTTPStatus
-from http.cookies import SimpleCookie
+from http.cookies import BaseCookie
 from http.server import SimpleHTTPRequestHandler
-
+from core.web import session
 
 DEFAULT_ENCODING = 'utf-8'
 
@@ -16,13 +16,17 @@ DEFAULT_ENCODING = 'utf-8'
 class WebHandler(SimpleHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     SESS_EXP_TIME = 0
+    SESS_KEY = 'bi_ssid'
 
     def authorize(self):
-        cookie_str = self.headers['Cookie']
-        print(self.headers)
-        cookie = SimpleCookie(cookie_str)
-        ssid = cookie.get('bi_ssid')
-        print(ssid)
+        self.authorized = False
+        cookies = BaseCookie(self.headers['Cookie'])
+        ssid = cookies.get(self.SESS_KEY)
+        if ssid is not None:
+            uid = session.valid(ssid)
+            if uid is not None:
+                self.authorized = True
+        print('Auth result: {}'.format(self.authorized))
 
     def do_GET(self):
         self.authorize()
@@ -34,6 +38,7 @@ class WebHandler(SimpleHTTPRequestHandler):
                 f.close()
 
     def do_POST(self):
+        raise Exception("POST NOT SUPPORTED")
         if self.headers['Content-length'] is None:
             self.send_response(HTTPStatus.LENGTH_REQUIRED)
             self.send_header('Connection', 'close')

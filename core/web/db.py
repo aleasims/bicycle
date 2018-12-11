@@ -10,4 +10,5 @@ DBClient = DummyClient()
 
 
 def register_client(address):
+    print('registered db client')
     DBClient = Client(address)

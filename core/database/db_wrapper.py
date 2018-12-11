@@ -51,7 +51,7 @@ class DBWrapper:
     def CREATESESS(self, params):
         # Creates session for user
         # Returns generated ssid
-        # Requires: `uid`, `client_ip`
+        # Requires: `uid`
         #
         for i in range(0, 10):
             ssid = uuid.uuid4().hex
@@ -62,7 +62,6 @@ class DBWrapper:
             raise Exception('Number of attempts exceeded')
         self.sessions.upsert({'uid': params['uid'],
                               'ssid': ssid,
-                              'clientIP': params['client_ip'],
                               'lastUpd': int(time.time())},
                               Query()['uid'] == params['uid'])
         return db_proto.Response(code=DBRespCode.OK, data={'ssid': ssid})

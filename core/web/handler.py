@@ -20,13 +20,12 @@ class WebHandler(SimpleHTTPRequestHandler):
 
     def authorize(self):
         self.authorized = False
-        cookies = BaseCookie(self.headers['Cookie'])
+        cookies = BaseCookie(self.headers['cookie'])
         ssid = cookies.get(self.SESS_KEY)
         if ssid is not None:
             uid = session.valid(ssid)
             if uid is not None:
                 self.authorized = True
-        print('Auth result: {}'.format(self.authorized))
 
     def do_GET(self):
         self.authorize()
@@ -115,9 +114,6 @@ class WebHandler(SimpleHTTPRequestHandler):
         # Static content:
         if os.path.isdir(path):
             parts = urllib.parse.urlsplit(self.path)
-            if not parts.path.endswith('/'):
-                self.send_moved_to(parts.path + '/')
-                return
             for index in 'index.html', 'index.htm':
                 index = os.path.join(path, index)
                 if os.path.exists(index):

@@ -6,7 +6,7 @@ def valid(ssid):
     dbresp = db.DBClient.send('GETSESS', {'ssid': ssid})
     if dbresp.code.name == 'FAIL':
         return
-    return dbresp.data['uid']
+    return dbresp.data.get('uid')
 
 
 def update(ssid):

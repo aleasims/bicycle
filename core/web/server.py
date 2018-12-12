@@ -14,6 +14,7 @@ class WebServer:
         self.config = config
         self.HOST, self.PORT = config['host'], config['port']
         db.register_client(config['db_address'])
+        self.logger.debug('Registered DB client for address {}'.format(config['db_address']))
         WebHandler.logger = self.logger
         WebHandler.SESS_EXP_TIME = config['auth_session_exp_time']
         self.server = ServerClass((self.HOST, self.PORT), WebHandler)

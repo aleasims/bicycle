@@ -13,7 +13,7 @@ class AlertParser:
         self.alert_file_path = config['alert_file_path']
         self.black_dict = {}
         self.dump_time = time.time()
-        self.dump_interval = 10
+        self.dump_interval = 60
 
     def tail_f(self):
         interval = 1.0

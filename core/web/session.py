@@ -1,5 +1,4 @@
 from core.web import db
-import imp
 
 
 def valid(ssid):

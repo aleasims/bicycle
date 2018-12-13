@@ -4,8 +4,8 @@ from io import BytesIO
 from urllib import parse
 from http import HTTPStatus
 from core.web.apps.common import extract_ssid, get_expires_time
-from core.web.apps.auth import session
-from core.web.apps.auth import user
+from core.web import session
+from core.web import user
 
 
 CHECKOUT_TIME = 300
@@ -15,6 +15,7 @@ THIS_APP = sys.modules[__name__]
 
 
 def activate(args):
+    print(args)
     params = parse.parse_qs(args['params'])
     action = params.get('action', [None]).pop()
     if action is None:
@@ -70,22 +71,6 @@ def login(args, response):
     response['headers'].append(('Set-Cookie', 'SSID={};Expires={}'.format(
                                 ssid, get_expires_time(10000))))
     return {'status': 'SUCCESSFUL'}
-
-
-def checkssid(args, response):
-    # Check if client has valid SSID
-    #
-    # Request example:
-    # GET /app/auth?action=checkssid
-
-    data = {'valid': False}
-    ssid = extract_ssid(args).value
-    if ssid is not None and session.valid(ssid, args['client'][0]):
-        data = {'valid': True}
-        response['headers'].append(('Set-Cookie', 'SSID={};Expires={}'.format(
-                                    ssid, get_expires_time(10000))))
-        session.update(ssid)
-    return data
 
 
 def logout(args, response):

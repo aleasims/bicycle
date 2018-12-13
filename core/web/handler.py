@@ -1,6 +1,7 @@
 import os
 import time
 import sys
+import bs4
 import importlib
 import traceback
 import urllib.parse
@@ -15,26 +16,31 @@ DEFAULT_ENCODING = 'utf-8'
 
 class WebHandler(SimpleHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
-    SESS_EXP_TIME = 0
+    SESS_EXP_TIME = 600
     SESS_KEY = 'bi_ssid'
 
-    def authorize(self):
-        self.authorized = False
-        cookies = BaseCookie(self.headers['cookie'])
-        ssid = cookies.get(self.SESS_KEY)
-        if ssid is not None:
-            uid = session.valid(ssid)
-            if uid is not None:
-                self.authorized = True
+    def check_session(self):
+        self.user_id = None
+        self.user_ssid = None
+        ssid_cookie = BaseCookie(
+            self.headers['cookie']).get(self.SESS_KEY)
+        if ssid_cookie is not None:
+            self.user_ssid = ssid_cookie.value
+            self.user_id = session.valid(self.user_ssid)
+            self.logger.debug('Session validated')
 
     def do_GET(self):
-        self.authorize()
+        self.check_session()
         f = self.send_head()
         if f:
             try:
                 self.copyfile(f, self.wfile)
             finally:
                 f.close()
+
+    def do_HEAD(self):
+        self.check_session()
+        self.send_head()
 
     def do_POST(self):
         raise Exception("POST NOT SUPPORTED")
@@ -80,31 +86,6 @@ class WebHandler(SimpleHTTPRequestHandler):
         self.send_header('Location', new_url)
         self.end_headers()
 
-    def send_file_head(self, path):
-        f = None
-        try:
-            f = open(path, 'rb')
-        except OSError:
-            self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
-            return
-        try:
-            mtime = os.path.getmtime(path) + time.timezone
-            cache_time = email.utils.parsedate(self.headers['If-Modified-Since'])
-            if cache_time and mtime <= time.mktime(cache_time):
-                self.send_response(HTTPStatus.NOT_MODIFIED)
-                self.end_headers()
-                return
-            self.send_response(HTTPStatus.OK)
-            self.send_header('Set-Cookie', 'bi_ssid=123; Max-Age: 10')
-            self.send_header('Content-type', self.guess_type(path))
-            self.send_header('Content-Length', str(os.fstat(f.fileno())[6]))
-            self.send_header('Last-Modified', self.date_time_string(mtime))
-            self.end_headers()
-            return f
-        except Exception:
-            f.close()
-            raise
-
     def send_head(self):
         os.chdir(self.server.www_dir)
         path = self.translate_path(self.path)
@@ -114,22 +95,33 @@ class WebHandler(SimpleHTTPRequestHandler):
         # Static content:
         if os.path.isdir(path):
             parts = urllib.parse.urlsplit(self.path)
-            for index in 'index.html', 'index.htm':
-                index = os.path.join(path, index)
-                if os.path.exists(index):
-                    path = index
-                    break
-                else:
-                    self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
-                    return
-        return self.send_file_head(path)
+            index = os.path.join(path, 'index.html')
+            if not os.path.exists(index):
+                self.send_error(HTTPStatus.NOT_FOUND, 'File not found')
+                return
+        self.send_response(HTTPStatus.OK)
+        return self.send_file_head(index)
 
-    def prepare_args(self, path):
-        return {'app': path.lstrip('/'),
-                'params': urllib.parse.urlsplit(self.path).query,
-                'headers': self.headers,
-                'client': self.client_address,
-                'input': getattr(self, 'input', None)}
+    def send_file_head(self, path):
+        f = None
+        try:
+            f = open(path, 'rb')
+        except OSError:
+            self.send_error(HTTPStatus.CONFLICT, 'Cannot read file')
+        try:
+            ctype = self.guess_type(path)
+            #soup = bs4.BeautifulSoup(model, 'html.parser')
+            #print(soup)
+            if self.user_ssid is not None:
+                self.send_header('Set-Cookie', '{}={}; Max-Age: {}'.format(
+                    self.SESS_KEY, self.user_ssid, self.SESS_EXP_TIME))
+            self.send_header('Content-type', ctype)
+            self.send_header('Content-Length', str(os.fstat(f.fileno())[6]))
+            self.end_headers()
+            return f
+        except Exception as e:
+            self.logger.error(e)
+            self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def send_app_head(self, path):
         args = self.prepare_args(path)
@@ -158,3 +150,11 @@ class WebHandler(SimpleHTTPRequestHandler):
             self.send_header(hdr[0], hdr[1])
         self.end_headers()
         return response.get('data')
+
+    def prepare_args(self, path):
+        return {'app': path.lstrip('/'),
+                'user_id': self.user_id,
+                'params': urllib.parse.urlsplit(self.path).query,
+                'headers': self.headers,
+                'client': self.client_address,
+                'input': getattr(self, 'input', None)}

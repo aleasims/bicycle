@@ -2,7 +2,7 @@ import json
 from io import BytesIO
 from http import HTTPStatus
 from urllib import parse
-from core.web.apps.common import DBClient
+from core.web import db
 from core.database import db_proto
 
 
@@ -27,10 +27,10 @@ def activate(args):
     }
     data = {}
 
-    if DBClient.send('GETIDBYNAME', {'name': name}).code == db_proto.DBRespCode.OK:
+    if db.DBClient.send('GETIDBYNAME', {'name': name}).code == db_proto.DBRespCode.OK:
         data = {'status': 'NAME_TAKEN'}
     else:
-        resp = DBClient.send('CREATEUSR', {'name': name, 'passwd': passwd})
+        resp = db.DBClient.send('CREATEUSR', {'name': name, 'passwd': passwd})
         if resp.code == db_proto.DBRespCode.OK:
             data = {'status': 'SUCCESSFUL',
                     'uid': resp.data['uid']}

@@ -1,3 +1,4 @@
+import ssl
 from socketserver import ThreadingMixIn
 from http.server import HTTPServer
 from core.web.handler import WebHandler
@@ -17,6 +18,8 @@ class WebServer:
         self.server.allow_reuse_address = True
         self.server.version = config['version']
         self.server.www_dir = config['www_dir']
+        self.server.socket = ssl.wrap_socket(self.server.socket,
+            certfile=config['certificate'], server_side=True)
 
     def start(self):
         self.logger.info('Starting server on {}:{}'.format(self.server.server_name, self.server.server_port))

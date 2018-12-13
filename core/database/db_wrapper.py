@@ -72,7 +72,7 @@ class DBWrapper:
         #
         sess = self.sessions.get(Query()['ssid'] == params['ssid'])
         if sess is None:
-            return db_proto.Response(code=DBRespCode.FAIL)
+            return db_proto.Response(code=DBRespCode.OK)
         return db_proto.Response(code=DBRespCode.OK, data=sess)
 
     def ONLINEUIDS(self, params):

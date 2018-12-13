@@ -99,6 +99,6 @@ class AlertParser:
                     self.dump_time = time.time()
                 #else:
                     #print('same!')
-from core.common import load_config
-config = load_config('/home/boeing/bicycle/config/ids.json')
-AlertParser(config).start()
+#from core.common import load_config
+#config = load_config('/home/boeing/bicycle/config/ids.json')
+#AlertParser(config).start()

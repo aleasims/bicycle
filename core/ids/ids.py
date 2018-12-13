@@ -1,7 +1,7 @@
 import time
 import re
 import json
-
+import os
 class Error(Exception):
     pass
 
@@ -13,7 +13,7 @@ class AlertParser:
         self.alert_file_path = config['alert_file_path']
         self.black_dict = {}
         self.dump_time = time.time()
-        self.dump_interval = 60
+        self.dump_interval = 15
 
     def tail_f(self):
         interval = 1.0
@@ -31,18 +31,35 @@ class AlertParser:
             else:
                 yield line
 
-    def start(self):
+    def empty_black_list(self):
+        self.black_dict = {}
+        open(self.black_list_file_path, 'w').close()
+
+    def load_dump(self):
         try:
             black_list_file = open(self.black_list_file_path, "r")
         except Exception:
             raise Error('Black list file does not exist')
-        self.black_dict = json.load(black_list_file)
+
+        try:
+            dump_dict = json.load(black_list_file)
+        except Exception:
+            raise Error('Json structure corrupt')
         black_list_file.close()
+        return dump_dict
+
+    def start(self):
+
+        if not os.path.isfile(self.black_list_file_path):
+            open(self.black_list_file_path, 'w').close()
+        if os.stat(self.black_list_file_path).st_size != 0:
+            self.black_dict = self.load_dump()
 
         #open(self.alert_file_path, 'w').close()
 
         look_ahead_re = '(?=:[0-9]+?\s\-\>\s' + self.server_ip_address + ')'
         for line in self.tail_f():
+            #print(line)
             if line != 'stuck':
                 ip = re.search('[0-9]+?\.[0-9]+?\.[0-9]+?\.[0-9]+?'+look_ahead_re, line)
                 priority = re.search('(?<=\[Priority:\s)[0-9]', line)
@@ -54,7 +71,7 @@ class AlertParser:
                     if not ip.group(0) in self.black_dict:
                         self.black_dict[ip.group(0)] = [{'attempt':class_.group(0), 'priority':priority.group(0),
                                                 'date':date.group(0), 'time':time_.group(0)}]
-                        #print(ip.group(0))
+                       # print(ip.group(0))
                     else:
                         if {'attempt':class_.group(0), 'priority':priority.group(0),
                                                     'date':date.group(0), 'time':time_.group(0)} not in self.black_dict[ip.group(0)]:
@@ -64,14 +81,12 @@ class AlertParser:
                         #else:
                             #print("there")
 
-            if time.time() - self.dump_time >= self.dump_interval:
+            if time.time() - self.dump_time >= self.dump_interval and len(self.black_dict) > 0:
                 #check if dump has to be rewritten:
-                try:
-                    black_list_file = open(self.black_list_file_path, "r")
-                except Exception:
-                    raise Error('Black list file does not exist')
-                dumped_black_list = json.load(black_list_file)
-                black_list_file.close()
+                dumped_black_list = {}
+                if os.stat(self.black_list_file_path).st_size != 0:
+                    dumped_black_list = self.load_dump()
+
                 #if has:
                 if dumped_black_list != self.black_dict:
                     json_dump = json.dumps(self.black_dict)
@@ -84,6 +99,6 @@ class AlertParser:
                     self.dump_time = time.time()
                 #else:
                     #print('same!')
-#from core.common import load_config
-#config = load_config('/home/boeing/bicycle/config/ids.json')
-#AlertParser(config).start()
+from core.common import load_config
+config = load_config('/home/boeing/bicycle/config/ids.json')
+AlertParser(config).start()

@@ -1,7 +1,12 @@
+#!/usr/bin/python
 import time
 import re
 import json
 import os
+import sys
+import subprocess
+from subprocess import Popen, PIPE
+
 class Error(Exception):
     pass
 
@@ -36,6 +41,7 @@ class AlertParser:
         open(self.black_list_file_path, 'w').close()
 
     def load_dump(self):
+
         try:
             black_list_file = open(self.black_list_file_path, "r")
         except Exception:
@@ -49,6 +55,8 @@ class AlertParser:
         return dump_dict
 
     def start(self):
+        p = Popen(["sudo", "snort", "-A", "fast", "-c", "/etc/snort/snort.conf", "-q"], stdout=PIPE)
+        #print(p.communicate())
 
         if not os.path.isfile(self.black_list_file_path):
             open(self.black_list_file_path, 'w').close()
@@ -71,7 +79,7 @@ class AlertParser:
                     if not ip.group(0) in self.black_dict:
                         self.black_dict[ip.group(0)] = [{'attempt':class_.group(0), 'priority':priority.group(0),
                                                 'date':date.group(0), 'time':time_.group(0)}]
-                       # print(ip.group(0))
+                        #print(ip.group(0))
                     else:
                         if {'attempt':class_.group(0), 'priority':priority.group(0),
                                                     'date':date.group(0), 'time':time_.group(0)} not in self.black_dict[ip.group(0)]:
@@ -100,5 +108,6 @@ class AlertParser:
                 #else:
                     #print('same!')
 #from core.common import load_config
+
 #config = load_config('/home/boeing/bicycle/config/ids.json')
 #AlertParser(config).start()

@@ -3,6 +3,5 @@
 	"version": "0.1b",
 	"host": "",
 	"port": 8080,
-	"www_dir": "/home/alea/bicycle/www",
-	"certificate": "/etc/letsencrypt/live/platypuses.servebeer.com/cert.pem"
+	"www_dir": "/home/alea/bicycle/www"
 }

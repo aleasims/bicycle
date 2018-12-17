@@ -14,7 +14,8 @@ def validate(ssid):
     if dbresp.code.name == 'FAIL':
         return
     user = dbresp.data
-    user['ssid'] = ssid
+    if user is not None:
+        user['ssid'] = ssid
     return user
 
 

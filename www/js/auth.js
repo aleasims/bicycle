@@ -1,6 +1,7 @@
 var logged = false;
 var logNickname = "";
 
+
 function registerUser() {
     var regform = document.getElementById("regForm");
     var approvement = document.getElementById("approvement")
@@ -48,6 +49,28 @@ function registerUser() {
     xhttp.send();
 }
 
+function logOut() {
+    var http = new XMLHttpRequest();
+    http.onreadystatechange = function() {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                var response = JSON.parse(this.responseText)
+                if (response.status === 'SUCCESSFUL') {
+                    logged = false;
+                } else {
+                    logged = true;
+                }
+            }
+            setTimeout(() => {window.location.reload()}, 100);
+            controleElements(loggedElements, logged, displaySwitch);
+            controleElements(notLoggedElements, !logged, displaySwitch);
+            eraseCookie("bi_ssid");
+        }
+    }
+    http.open("GET", "/app/auth?action=logout", true);
+    http.send();
+};
+
 function logIn() {
     var logform = document.forms["loginForm"];
     var approvement = document.getElementById("logApprovement");
@@ -71,7 +94,7 @@ function logIn() {
                 if (response.status === "SUCCESSFUL") {
                     approvement.innerHTML = "You are logged in!";
                     logged = true;
-                    window.location.reload();
+                    setTimeout(() => {window.location.reload()}, 100);
                 } else {
                     switch (response.msg) {
                         case "Identification failed":
@@ -95,48 +118,6 @@ function logIn() {
     var passwd_hash = hex_md5(passwd);
     xhttp.open("GET", `/app/auth?name=${nickname}&pwd=${passwd_hash}`, true);
     xhttp.send();
-};
-
-function checkSsid(callback) {
-    var checker = new XMLHttpRequest();
-    checker.onreadystatechange = function() {
-        if (this.readyState == 4) {
-            if (this.status == 200) {
-                try {
-                    var response = JSON.parse(this.responseText);
-                    logged = response.valid;
-                } catch (err) {
-                    console.log(err);
-                    return;
-                }
-            } else {
-                console.log("Auth request was unsuccessful");
-            }
-            callback(logged);
-        }
-    };
-    checker.open("GET", "/app/auth?action=checkssid", true);
-    checker.send();
-};
-
-function logOut() {
-    var http = new XMLHttpRequest();
-    http.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            var response = JSON.parse(this.responseText)
-            if (response.status === 'SUCCESSFUL') {
-                logged = false;
-            } else {
-                console.log('Something went wrong during logging out');
-                logged = true;
-            }
-        }
-        controlElements(logged);
-        eraseCookie("SSID");
-        setTimeout(() => {window.location.reload()}, 100);
-    }
-    http.open("GET", "/app/auth?action=logout", true);
-    http.send();
 };
 
 function validName(name, approvement) {

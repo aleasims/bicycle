@@ -65,7 +65,7 @@ def login(args, response):
     if ssid is None:
         return {'status': 'FAILED', 'msg': 'Session not created'}
 
-    response['headers'].append(('Set-Cookie', '{}={}; Max-Age={}'.format(
+    response['headers'].append(('Set-Cookie', '{}={}; path=/; Max-Age={}; SameSite=Lax; HttpOnly'.format(
                                 session.SESS_KEY, ssid, session.SESS_EXP_TIME)))
     return {'status': 'SUCCESSFUL'}
 

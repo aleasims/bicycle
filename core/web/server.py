@@ -27,8 +27,6 @@ class WebServer:
         self.logger.debug('Page model loaded')
 
         WebHandler.logger = self.logger
-        WebHandler.SESS_EXP_TIME = config['auth_session_exp_time']
-
         self.server = ServerClass((self.host, self.port), WebHandler)
         self.server.allow_reuse_address = True
         self.server.www_dir = config['www_dir']

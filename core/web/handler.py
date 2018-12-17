@@ -59,8 +59,6 @@ class WebHandler(SimpleHTTPRequestHandler):
             return
         ssid = ssid_cookie.value
         user_data = session.validate(ssid)
-        if user_data is None:
-            ssid = None
         self.user = user_data
 
     def handle_input(self):
@@ -112,7 +110,7 @@ class WebHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-type', 'text/html; charset={}'.format(DEFAULT_ENCODING))
         self.send_header('Content-Length', str(len(page)))
         if self.user is not None:
-            self.send_header('Set-Cookie', '{}={}; Max-Age: {}'.format(
+            self.send_header('Set-Cookie', '{}={}; path=/; Max-Age={}; SameSite=Lax; HttpOnly'.format(
                 session.SESS_KEY, self.user['ssid'], session.SESS_EXP_TIME))
         self.end_headers()
         return io.BytesIO(page.encode(DEFAULT_ENCODING))
@@ -124,7 +122,7 @@ class WebHandler(SimpleHTTPRequestHandler):
         self.send_header('Content-Length', str(os.fstat(f.fileno())[6]) + 
             '; charset={}'.format(DEFAULT_ENCODING))
         if self.user is not None:
-            self.send_header('Set-Cookie', '{}={}; Max-Age: {}'.format(
+            self.send_header('Set-Cookie', '{}={}; path=/; Max-Age={}; SameSite=Lax; HttpOnly'.format(
                 session.SESS_KEY, self.user['ssid'], session.SESS_EXP_TIME))
         self.end_headers()
         return f

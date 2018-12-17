@@ -3,44 +3,23 @@ var logNickname = "";
 var loggedElements = ["logOutButton", "accImg", "chatButton"];
 var notLoggedElements = ["logformContainer", "newAccButton"];
 
-function checkSsid() {
-    var checker = new XMLHttpRequest();
-    checker.onreadystatechange = function() {
-        if (this.readyState == 4) {
-            if (this.status == 200) {
-                try {
-                    var response = JSON.parse(this.responseText);
-                    logged = response.valid;
-                } catch (err) {
-                    console.log(err);
-                    return;
-                }
-            } else {
-                console.log("Auth request was unsuccessful");
-            }
-        }
-        controleElements(loggedElements, logged, displaySwitch);
-        controleElements(notLoggedElements, !logged, displaySwitch);
-    };
-    checker.open("GET", "/app/auth?action=checkssid", true);
-    checker.send();
-};
-
 function logOut() {
     var http = new XMLHttpRequest();
     http.onreadystatechange = function() {
-        if (this.readyState == 4 && this.status == 200) {
-            var response = JSON.parse(this.responseText)
-            if (response.status === 'SUCCESSFUL') {
-                logged = false;
-            } else {
-                logged = true;
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                var response = JSON.parse(this.responseText)
+                if (response.status === 'SUCCESSFUL') {
+                    logged = false;
+                } else {
+                    logged = true;
+                }
             }
+            window.location.reload();
+            controleElements(loggedElements, logged, displaySwitch);
+            controleElements(notLoggedElements, !logged, displaySwitch);
+            eraseCookie("bi_ssid");
         }
-        controleElements(loggedElements, logged, displaySwitch);
-        controleElements(notLoggedElements, !logged, displaySwitch);
-        eraseCookie("SSID");
-        window.location.reload();
     }
     http.open("GET", "/app/auth?action=logout", true);
     http.send();

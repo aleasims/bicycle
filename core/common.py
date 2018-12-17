@@ -3,6 +3,8 @@ import os
 import uuid
 import json
 import sys
+from core.database import db_client
+import argparse
 
 
 def create_unique_token(check_list, attempts=10):
@@ -14,19 +16,38 @@ def create_unique_token(check_list, attempts=10):
         raise Exception('Number of attempts exceeded')
 
 
-def configure_logger(name):
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-v',
+                        action='store_true',
+                        help='verbosity level')
+    parser.add_argument('-o',
+                        type=str,
+                        default='.',
+                        help='output dir')
+    args = parser.parse_args()
+    return args
+
+
+def configure_logger(name, debug=False, output_dir='.'):
+    level = logging.DEBUG if debug else logging.INFO
     logger = logging.getLogger(name)
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(level)
 
     ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
+
+    filename = os.path.join(output_dir, 'bicycle.log')
+    fh = logging.FileHandler(filename)
 
     canvas = '[%(asctime)s] %(name)s: %(levelname)s - %(message)s'
     formatter = logging.Formatter(canvas)
+
     ch.setFormatter(formatter)
+    fh.setFormatter(formatter)
 
     logger.addHandler(ch)
-
+    logger.addHandler(fh)
+    logger.debug('Logger configured')
     return logger
 
 

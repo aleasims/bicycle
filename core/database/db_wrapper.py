@@ -11,6 +11,9 @@ from core.database.db_proto import DBRespCode
 from core.common import create_unique_token
 
 
+SEED = 1000  # adding to used id to normalize it
+
+
 class DBWrapper:
     '''
     User and Message database API class
@@ -41,6 +44,7 @@ class DBWrapper:
         try:
             return perform(request.params)
         except Exception as err:
+            traceback.print_exc()
             self.__log_err(err)
             return db_proto.Response(code=DBRespCode.FAIL)
 
@@ -52,7 +56,7 @@ class DBWrapper:
     def CREATESESS(self, params):
         # Creates session for user
         # Returns generated ssid
-        # Requires: `uid`, `client_ip`
+        # Requires: `uid`
         #
         for i in range(0, 10):
             ssid = uuid.uuid4().hex
@@ -63,7 +67,6 @@ class DBWrapper:
             raise Exception('Number of attempts exceeded')
         self.sessions.upsert({'uid': params['uid'],
                               'ssid': ssid,
-                              'clientIP': params['client_ip'],
                               'lastUpd': int(time.time())},
                               Query()['uid'] == params['uid'])
         return db_proto.Response(code=DBRespCode.OK, data={'ssid': ssid})
@@ -109,14 +112,14 @@ class DBWrapper:
     def CREATEUSR(self, params):
         # Create new user if possible
         # Returns uid of created user
-        # Requires: `name`, `passwd`
+        # Requires: `name`, `passwd`, `email`
         #
         if self.users.contains(Query()['name'] == params['name']):
             return db_proto.Response(code=DBRespCode.FAIL)  # Name must be unique
-
-        uid = self.users.insert({'name': params['name'],
-                                 'registerDate': time.ctime()})
-        self.users.update({'uid': uid}, Query()['name'] == params['name'])
+        doc_id = self.users.insert({'name': params['name'],
+                                    'registerDate': time.ctime()})
+        uid = SEED + doc_id
+        self.users.update({'uid': uid}, doc_ids=[doc_id])
         self.private.insert({'uid': uid,
                              'passwd': params['passwd']})
         return db_proto.Response(code=DBRespCode.OK, data={'uid': uid})
@@ -125,7 +128,7 @@ class DBWrapper:
         # Returns user info for given uid
         # Requires: `uid`
         #
-        user = self.users.get(doc_id=params['uid'])
+        user = self.users.get(Query()['uid'] == params['uid'])
         if user is None:
             return db_proto.Response(code=DBRespCode.FAIL)
         return db_proto.Response(code=DBRespCode.OK, data=user)
@@ -134,10 +137,9 @@ class DBWrapper:
         # Return user names for given uids
         # Requires: `uids`
         #
-        
         names = []
         for uid in params['uids']:
-            usr = self.users.get(doc_id=uid)
+            usr = self.users.get(Query()['uid'] == params['uid'])
             if usr is not None:
                 names.append((uid, usr['name']))
         return db_proto.Response(code=DBRespCode.OK, data=names)
@@ -149,7 +151,7 @@ class DBWrapper:
         #
         user = self.users.get(Query()['name'] == params['name'])
         if user is not None:
-            return db_proto.Response(code=DBRespCode.OK, data={'uid': user.doc_id})
+            return db_proto.Response(code=DBRespCode.OK, data={'uid': user['uid']})
         return db_proto.Response(code=DBRespCode.FAIL)
 
     def CHECKPWD(self, params):

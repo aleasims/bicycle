@@ -22,6 +22,10 @@ class WebHandler(SimpleHTTPRequestHandler):
     protocol_version = 'HTTP/1.1'
     server_version = 'Bicycle/' + __version__
 
+    @property
+    def error_message_format(self):
+        return view.error_message(getattr(self, 'user', None))
+
     def do_HEAD(self):
         self.check_session()
         self.send_head()
@@ -97,6 +101,9 @@ class WebHandler(SimpleHTTPRequestHandler):
                 return
             return self.send_personal_head(content)
         else:
+            if not os.path.exists(path):
+                self.send_error(HTTPStatus.NOT_FOUND, 'This page does not exist')
+                return
             return self.send_static_head(path)
 
     def send_personal_head(self, content):

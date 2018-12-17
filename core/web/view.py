@@ -27,6 +27,20 @@ not_logged_menu = '''
 '''
 
 
+__error_message_model = '''
+<h1>Error %(code)d - %(message)s</h1>
+<p>Error code %(code)s - %(explain)s.</p>
+'''
+
+
+def error_message(user):
+    if user is None:
+        page = model % {'menu': not_logged_menu, 'content': __error_message_model}
+    else:
+        page = (model % {'menu': logged_menu, 'content': __error_message_model}) % user
+    return page
+
+
 def fill(path, user):
     content = open(path, mode='r', encoding='utf-8').read()
     cases = content.split(authorized_separator, 1)
@@ -36,7 +50,7 @@ def fill(path, user):
     else:
         logged = cases[0]
     if user is None:
-        page = model % {'menu': not_logged_menu, 'content': not_logged}            
+        page = model % {'menu': not_logged_menu, 'content': not_logged}
     else:
         page = (model % {'menu': logged_menu, 'content': logged}) % user
     return page

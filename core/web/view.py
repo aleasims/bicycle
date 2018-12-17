@@ -37,7 +37,7 @@ def error_message(user):
     if user is None:
         page = model % {'menu': not_logged_menu, 'content': __error_message_model}
     else:
-        page = (model % {'menu': logged_menu, 'content': __error_message_model}) % user
+        page = (model % {'menu': logged_menu % user, 'content': __error_message_model})
     return page
 
 

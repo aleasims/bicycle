@@ -25,7 +25,6 @@ def activate(args):
                     ('Content-type', 'application/json')]
     }
     result = user.create(name, passwd)
-    print(result)
     data = {
         'status': result[0]
     }

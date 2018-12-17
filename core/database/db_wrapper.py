@@ -139,7 +139,7 @@ class DBWrapper:
         #
         names = []
         for uid in params['uids']:
-            usr = self.users.get(Query()['uid'] == params['uid'])
+            usr = self.users.get(Query()['uid'] == uid)
             if usr is not None:
                 names.append((uid, usr['name']))
         return db_proto.Response(code=DBRespCode.OK, data=names)

@@ -1,1 +1,31 @@
-<p>Any other chatpage content here</p>
+<div style="margin: 5px;padding: 10px;background-color: white;border: 1px solid var(--effective);">
+<a href="/reg">Create account</a> or <a href="/">login</a> first
+</div>
+<!-- If authorized -->
+<div id="chatMain" class="chat">
+  <div id="leftChatSection" class="chat_section">
+    <div id="leftChatSectionHeader">Users</div>
+    <div id="leftChatSectionContainer">
+      <div id="leftChatSectionContainerSupp"></div>
+    </div>
+  </div>
+  <div id="rightChatSection" class="chat_section">
+    <div id="textBar">
+      <input id="msgInp" type="text" name="msgInp" placeholder="Type here...">
+      <button id="sendButton" type="button" onclick="sendMessage();">Send</button>
+    </div>
+    <div id="messagesContainer">
+      <div id="chatEmptyMsg" class="serviceMsg">First create channel with user</div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+  var input = document.getElementById("msgInp");
+  input.addEventListener("keyup", function(event) {
+    if (event.keyCode == 13) {
+      sendMessage();
+    }
+  });
+  updateOnlineUsers(10000);
+  acceptChannelRequest();
+</script>

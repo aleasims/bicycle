@@ -3,13 +3,12 @@ import json
 from io import BytesIO
 from http import HTTPStatus
 from urllib import parse
-from core.web.apps.common import DBClient, extract_ssid, get_expires_time
-from core.web.apps.auth import session
-from core.web.apps.chat import longpoll
+from core.web import db
+from core.web import session
+from core.web import longpoll
 
 
 THIS_APP = sys.modules[__name__]
-DEFAULT_ACTION = 'makeactive'
 ENC = 'utf-8'
 MAX_TIMEOUT = 120
 MIN_TIMEOUT = 5
@@ -17,9 +16,7 @@ MIN_TIMEOUT = 5
 
 def activate(args):
     params = parse.parse_qs(args['params'])
-    action = params.get('action', [None]).pop()
-    if action is None:
-        action = DEFAULT_ACTION
+    action = params.get('action', ['']).pop()
 
     response = {
         'headers': [('Connection', 'close')]
@@ -42,10 +39,10 @@ def activate(args):
 
 def getonlineusr(args, response):
     data = {'online': []}
-    dbresp = DBClient.send('ONLINEUIDS')
+    dbresp = db.DBClient.send('ONLINEUIDS')
     if dbresp.code.name != 'OK':
         return data
-    dbresp = DBClient.send('GETNAMESBYIDS', {'uids': dbresp.data['uids']})
+    dbresp = db.DBClient.send('GETNAMESBYIDS', {'uids': dbresp.data['uids']})
     if dbresp.code.name != 'OK':
         return data
     data['online'] = [{'uid': usr[0], 'name': usr[1]} for usr in dbresp.data]
@@ -57,12 +54,11 @@ def accept(args, response):
     timeout = timeout if timeout <= MAX_TIMEOUT else MAX_TIMEOUT
     timeout = timeout if timeout >= MIN_TIMEOUT else MIN_TIMEOUT
 
-    ssid = extract_ssid(args)
-    if ssid is not None and session.valid(ssid, args['client'][0]):
-        uid = session.uid(ssid)
-
+    user = args['user']
+    if user is not None:
+        uid = user['uid']
         def get_new_chnls():
-            resp = DBClient.send('FINDCHNL', {'uid': uid, 'status': 'REQ'})
+            resp = db.DBClient.send('FINDCHNL', {'uid': uid, 'status': 'REQ'})
             if resp.code.name == 'OK' and resp.data:
                 return resp.data
 

@@ -62,11 +62,11 @@ def login(args, response):
     if not user.authenticate(uid, passwd):
         return {'status': 'FAILED', 'msg': 'Authentication failed'}
 
-    ssid = session.create(uid, args['client'][0])
+    ssid = session.create(uid)
     if ssid is None:
         return {'status': 'FAILED', 'msg': 'Session not created'}
 
-    response['headers'].append(('Set-Cookie', '{}={}; Mag-Age={}'.format(
+    response['headers'].append(('Set-Cookie', '{}={}; Max-Age={}'.format(
                                 session.SESS_KEY, ssid, session.SESS_EXP_TIME)))
     return {'status': 'SUCCESSFUL'}
 

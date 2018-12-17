@@ -61,7 +61,7 @@ def login(args, response):
     if not user.authenticate(uid, passwd):
         return {'status': 'FAILED', 'msg': 'Authentication failed'}
 
-    ssid = session.create(uid, args['client'][0])
+    ssid = session.create(uid)
     if ssid is None:
         return {'status': 'FAILED', 'msg': 'Session not created'}
 

@@ -27,10 +27,9 @@ def activate(args):
     except AttributeError:
         response['code'] = HTTPStatus.NOT_IMPLEMENTED
     else:
-        response['code'] = HTTPStatus.OK
-
         data = action(args, response)
         if data:
+            response['code'] = HTTPStatus.OK
             data = json.dumps(data)
             response['headers'].append(('Content-type', 'application/json;charset={}'.format(ENC)))
             response['headers'].append(('Content-length', str(len(data))))

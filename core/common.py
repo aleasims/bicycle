@@ -1,9 +1,19 @@
 import logging
 import os
+import uuid
 import json
 import sys
 from core.database import db_client
 import argparse
+
+
+def create_unique_token(check_list, attempts=10):
+    for i in range(0, attempts):
+        token = uuid.uuid4().hex
+        if token not in check_list:
+            return token
+    else:
+        raise Exception('Number of attempts exceeded')
 
 
 def parse_args():

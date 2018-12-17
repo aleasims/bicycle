@@ -15,9 +15,10 @@ def load_model(www_dir):
 logged_menu = '''
 <a class="menubutton" href="/">Home
 <a class="menubutton" href="/about">About
+<a class="menubutton" href="/chat">Chat
 <a class="menubutton right" id="logOutButton" onclick="logOut()">Logout
 <a class="menubutton right" href="/account" id="accImg">
-<img src="/img/acc_logo.png" height="20">%(name)s</a>
+<img src="/img/acc_logo.png" height="20"> %(name)s</a>
 '''
 
 not_logged_menu = '''

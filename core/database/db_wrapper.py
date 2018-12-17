@@ -8,6 +8,7 @@ from tinydb.operations import delete
 from tinydb.storages import MemoryStorage
 from core.database import db_proto
 from core.database.db_proto import DBRespCode
+from core.common import create_unique_token
 
 
 SEED = 1000  # adding to used id to normalize it
@@ -33,12 +34,13 @@ class DBWrapper:
 
     def __log_err(self, err):
         self.logger.debug('Exception during performing DB operation: {}'.format(err))
-        # traceback.print_exc()
+        traceback.print_exc()
 
     def perform(self, request):
         perform = getattr(self, request.method, None)
         if not perform:
-            raise Exception('Unsupported request method')
+            return db_proto.Response(code=DBRespCode.FAIL,
+                                     data={'msg': 'Unsupported method'})
         try:
             return perform(request.params)
         except Exception as err:
@@ -51,7 +53,6 @@ class DBWrapper:
     # - accepts only (!) `params` argument - dict-like object
 
 # SESSIONS
-
     def CREATESESS(self, params):
         # Creates session for user
         # Returns generated ssid
@@ -79,13 +80,6 @@ class DBWrapper:
             return db_proto.Response(code=DBRespCode.FAIL)
         return db_proto.Response(code=DBRespCode.OK, data=sess)
 
-    def ONLINEUIDS(self, params):
-        # Returns list of uids of logged users
-        # Requires: -
-        #
-        uids = [sess['uid'] for sess in self.sessions.all()]
-        return db_proto.Response(code=DBRespCode.OK, data={'uids': uids})
-
     def UPDSESS(self, params):
         # Updates lastUpd timestamp
         # Requires: `ssid`
@@ -107,8 +101,14 @@ class DBWrapper:
             self.sessions.remove(doc_ids=[sess.doc_id])
         return db_proto.Response(code=DBRespCode.OK)
 
-# USER
+    def ONLINEUIDS(self, params):
+        # Returns list of uids of logged users
+        # Requires: -
+        #
+        uids = [sess['uid'] for sess in self.sessions.all()]
+        return db_proto.Response(code=DBRespCode.OK, data={'uids': uids})
 
+# USER
     def CREATEUSR(self, params):
         # Create new user if possible
         # Returns uid of created user
@@ -116,7 +116,6 @@ class DBWrapper:
         #
         if self.users.contains(Query()['name'] == params['name']):
             return db_proto.Response(code=DBRespCode.FAIL)  # Name must be unique
-
         doc_id = self.users.insert({'name': params['name'],
                                     'registerDate': time.ctime()})
         uid = SEED + doc_id
@@ -140,7 +139,7 @@ class DBWrapper:
         #
         names = []
         for uid in params['uids']:
-            usr = self.users.get(Query()['uid'] == params['uid'])
+            usr = self.users.get(Query()['uid'] == uid)
             if usr is not None:
                 names.append((uid, usr['name']))
         return db_proto.Response(code=DBRespCode.OK, data=names)
@@ -176,5 +175,50 @@ class DBWrapper:
         return db_proto.Response(code=DBRespCode.FAIL)
 
 # CHANNELS
-    def CREATECHANNEL(self, params):
-        pass
+    def CREATECHNL(self, params):
+        uids = params['uids']
+        if len(uids) != 2:
+            return db_proto.Response(code=DBRespCode.FAIL,
+                                     data={'msg': 'Invalid params'})
+        if uids[0] == uids[1]:
+            return db_proto.Response(code=DBRespCode.FAIL,
+                                     data={'msg': 'Users must be different'})
+        users = []
+        for uid in uids:
+            usr = self.users.get(doc_id=uid)
+            if usr is None:
+                return db_proto.Response(code=DBRespCode.FAIL,
+                                         data={'msg': 'User not found'})
+            users.append(usr)
+
+        chid = create_unique_token([chnl['chid'] for chnl in self.channels.all()])
+
+        self.channels.insert({'chid': chid,
+                              'status': params['status'],
+                              'users': users,
+                              'buffer': {
+                                    uids[0]: [],
+                                    uids[1]: []}})
+        return db_proto.Response(code=DBRespCode.OK, data={'chid': chid})
+
+    def CHANGECHNLSTATUS(self, params):
+        chid = params['chid']
+        new_status = params['status']
+        if self.channels.get(Query()['chid'] == chid) is None:
+            return db_proto.Response(code=DBRespCode.FAIL,
+                                     data={'msg': 'Channel not found'})
+        self.channels.update({'status': new_status},
+                             Query()['chid'] == chid)
+        return db_proto.Response(code=DBRespCode.OK)
+
+    def FINDCHNL(self, params):
+        uid = params['uid']
+        status = params.get('status')
+        Chnl = Query()
+        def contains(users):
+            return uid in [user['uid'] for user in users]
+        if status is not None:
+            chnls = self.channels.search(Chnl['users'].test(contains) & (Chnl['status'] == status))
+        else:
+            chnls = self.channels.search(Chnl['users'].test(contains))
+        return db_proto.Response(code=DBRespCode.OK, data=chnls)

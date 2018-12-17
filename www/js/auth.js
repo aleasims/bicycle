@@ -1,7 +1,53 @@
 var logged = false;
 var logNickname = "";
-var loggedElements = ["logOutButton", "accImg", "chatButton"];
-var notLoggedElements = ["logformContainer", "newAccButton"];
+
+
+function registerUser() {
+    var regform = document.getElementById("regForm");
+    var approvement = document.getElementById("approvement")
+
+    var nickname = regform.nickname.value;
+    if (!validName(nickname, approvement)) {
+        regform.reset();
+        return;
+    }
+    var passwd = regform.passwd.value;
+    if (!validPasswd(passwd, approvement)) {
+        regform.passwd.value = regform.passwd.defaultValue;
+        return;
+    }
+
+    var xhttp = new XMLHttpRequest();
+    xhttp.onreadystatechange = function() {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                try {
+                    response = JSON.parse(this.responseText);
+                } catch (err) {
+                    approvement.innerHTML = "Something went wrong, try again later";
+                    return;
+                }
+                if (response.status === 'SUCCESSFUL') {
+                    approvement.innerHTML = "You are registered succesfully! " +
+                        "You can <a href=\"/\">log in</a> now.";
+                    document.getElementById("regformContainer").style.display = "none";
+                } else if (response.status === 'NAME_TAKEN') {
+                    approvement.innerHTML = "This nickname is already taken, try different nickname";
+                    regform.reset();
+                } else {
+                    approvement.innerHTML = "Something went wrong, try again later";
+                    regform.reset();
+                }
+            } else {
+                approvement.innerHTML = "Something went wrong, try again later";
+                regform.reset();
+            }
+        }
+    };
+    var passwd_hash = hex_md5(passwd);
+    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}`, true);
+    xhttp.send();
+}
 
 function logOut() {
     var http = new XMLHttpRequest();
@@ -15,7 +61,7 @@ function logOut() {
                     logged = true;
                 }
             }
-            window.location.reload();
+            setTimeout(() => {window.location.reload()}, 100);
             controleElements(loggedElements, logged, displaySwitch);
             controleElements(notLoggedElements, !logged, displaySwitch);
             eraseCookie("bi_ssid");
@@ -48,7 +94,7 @@ function logIn() {
                 if (response.status === "SUCCESSFUL") {
                     approvement.innerHTML = "You are logged in!";
                     logged = true;
-                    setTimeout(window.location.reload(), 3000);
+                    setTimeout(() => {window.location.reload()}, 100);
                 } else {
                     switch (response.msg) {
                         case "Identification failed":
@@ -67,13 +113,11 @@ function logIn() {
                 logform.reset();
             }
         }
-        controleElements(loggedElements, logged, displaySwitch);
-        controleElements(notLoggedElements, !logged, displaySwitch);
+        controlElements(logged);
     };
     var passwd_hash = hex_md5(passwd);
     xhttp.open("GET", `/app/auth?name=${nickname}&pwd=${passwd_hash}`, true);
     xhttp.send();
-
 };
 
 function validName(name, approvement) {
@@ -102,98 +146,6 @@ function validPasswd(passwd, approvement) {
         return false;
     }
     return true;
-}
-
-function registerUser() {
-    var regform = document.getElementById("regForm");
-    var approvement = document.getElementById("approvement")
-
-    var nickname = regform.nickname.value;
-    if (!validName(nickname, approvement)) {
-        regform.reset();
-        return;
-    }
-    var passwd = regform.passwd.value;
-    if (!validPasswd(passwd, approvement)) {
-        regform.passwd.value = regform.passwd.defaultValue;
-        return;
-    }
-
-    var xhttp = new XMLHttpRequest();
-    xhttp.onreadystatechange = function() {
-        if (this.readyState == 4) {
-            if (this.status == 200) {
-                try {
-                    response = JSON.parse(this.responseText);
-                } catch (err) {
-                    approvement.innerHTML = "Something went wrong, try again later";
-                    return;
-                }
-                if (response.status === 'SUCCESSFUL') {
-                    approvement.innerHTML = "You are registered succesfully! " +
-                        "You can <a href=\"/\">log in</a> now.";
-                    controleElements(["regformContainer"], false, displaySwitch)
-                } else if (response.status === 'NAME_TAKEN') {
-                    approvement.innerHTML = "This nickname is already taken, try different nickname";
-                    regform.reset();
-                } else {
-                    approvement.innerHTML = "Something went wrong, try again later";
-                    regform.reset();
-                }
-            } else {
-                approvement.innerHTML = "Something went wrong, try again later";
-                regform.reset();
-            }
-        }
-    };
-    var passwd_hash = hex_md5(passwd);
-    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}`, true);
-    xhttp.send();
-}
-
-
-function controleElements(elems, selector, handle) {
-    var len = elems.length;
-    for (var i = 0; i < len; i++) {
-        var elem = document.getElementById(elems[i]);
-        handle(selector, elem, "inline-block", "none");
-    }
-}
-
-function displaySwitch(selector, elem, state_true, state_false) {
-    if (elem == null) {
-        return;
-    }
-    if (selector) {
-        elem.style.display = state_true;
-    } else {
-        elem.style.display = state_false;
-    }
-}
-
-function setCookie(name, value, days) {
-    var expires = "";
-    if (days) {
-        var date = new Date();
-        date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-        expires = "; expires=" + date.toUTCString();
-    }
-    document.cookie = name + "=" + (value || "") + expires;
-}
-
-function getCookie(name) {
-    var nameEQ = name + "=";
-    var ca = document.cookie.split(';');
-    for (var i = 0; i < ca.length; i++) {
-        var c = ca[i];
-        while (c.charAt(0) == ' ') c = c.substring(1, c.length);
-        if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
-    }
-    return null;
-}
-
-function eraseCookie(name) {
-    document.cookie = name + "=0; expires=Thu, 18 Dec 2011 12:00:00 UTC";
 }
 
 /*

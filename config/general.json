@@ -3,5 +3,7 @@
 	"modules": [
 		"web_server",
 		"db_server"
-	]
+	],
+	"debug": true,
+	"output_dir": "/tmp"
 }

@@ -3,9 +3,8 @@ import json
 from io import BytesIO
 from urllib import parse
 from http import HTTPStatus
-from core.web.apps.common import extract_ssid, get_expires_time
-from core.web.apps.auth import session
-from core.web.apps.auth import user
+from core.web import session
+from core.web import user
 
 
 CHECKOUT_TIME = 300
@@ -67,25 +66,9 @@ def login(args, response):
     if ssid is None:
         return {'status': 'FAILED', 'msg': 'Session not created'}
 
-    response['headers'].append(('Set-Cookie', 'SSID={};Expires={}'.format(
-                                ssid, get_expires_time(10000))))
+    response['headers'].append(('Set-Cookie', '{}={}; Mag-Age={}'.format(
+                                session.SESS_KEY, ssid, session.SESS_EXP_TIME)))
     return {'status': 'SUCCESSFUL'}
-
-
-def checkssid(args, response):
-    # Check if client has valid SSID
-    #
-    # Request example:
-    # GET /app/auth?action=checkssid
-
-    data = {'valid': False}
-    ssid = extract_ssid(args).value
-    if ssid is not None and session.valid(ssid, args['client'][0]):
-        data = {'valid': True}
-        response['headers'].append(('Set-Cookie', 'SSID={};Expires={}'.format(
-                                    ssid, get_expires_time(10000))))
-        session.update(ssid)
-    return data
 
 
 def logout(args, response):
@@ -93,6 +76,9 @@ def logout(args, response):
     #
     # Request example:
     # GET /app/auth?action=logout
-    if not session.drop(extract_ssid(args).value):
-        return {'status': 'FAILED'}
+
+    user = args['user']
+    if user is not None:
+        if not session.drop(user['ssid']):
+            return {'status': 'FAILED'}
     return {'status': 'SUCCESSFUL'}

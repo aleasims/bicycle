@@ -1,11 +1,21 @@
 from core.web import db
 
 
-def valid(ssid):
+SESS_EXP_TIME = 600
+SESS_KEY = 'bi_ssid'
+
+
+def validate(ssid):
     dbresp = db.DBClient.send('GETSESS', {'ssid': ssid})
     if dbresp.code.name == 'FAIL':
         return
-    return dbresp.data.get('uid')
+    uid = dbresp.data.get('uid')
+    dbresp = db.DBClient.send('GETUSRBYID', {'uid': uid})
+    if dbresp.code.name == 'FAIL':
+        return
+    user = dbresp.data
+    user['ssid'] = ssid
+    return user
 
 
 def update(ssid):
@@ -13,9 +23,9 @@ def update(ssid):
         {'ssid': ssid}).code.name == 'OK'
 
 
-def create(uid, ip):
+def create(uid):
     dbresp = db.DBClient.send('CREATESESS',
-        {'uid': uid, 'client_ip': ip})
+        {'uid': uid})
     if dbresp.code.name == 'OK':
         return dbresp.data['ssid']
     else:

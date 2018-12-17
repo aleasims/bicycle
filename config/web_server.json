@@ -1,7 +1,6 @@
 {
 	"name": "WebServer",
-	"version": "0.1b",
-	"host": "",
+	"host": "localhost",
 	"port": 8080,
 	"www_dir": "/home/alea/bicycle/www",
 	"db_address": "/tmp/bc_ipc",

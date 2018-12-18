@@ -81,8 +81,32 @@ function reloadOnlineList(list) {
         var elem = document.createElement("div");
         elem.id = "userField_" + list[i]["uid"].toString();
         elem.setAttribute("class", "onlineUserField");
-        elem.setAttribute("onclick", "requestChannel();");
+        elem.setAttribute("onclick", `requestChannel(${list[i]["uid"]});`);
         elem.innerHTML = list[i]["name"];
         addOnlineList(elem);
     }
+}
+
+function setWaitingStatus() {
+    var chatEmpty = document.getElementById("chatEmptyMsg");
+    chatEmpty.innerHTML = "Waiting...";
+}
+
+function setEmptyStatus() {
+    var chatEmpty = document.getElementById("chatEmptyMsg");
+    chatEmpty.innerHTML = "First create channel with user";
+}
+
+function createUserChat(name) {
+    var chatEmpty = document.getElementById("chatEmptyMsg");
+    chatEmpty.style.display = "none";
+    insertChatHead(name);
+}
+
+function insertChatHead(name) {
+    var container = document.getElementById("messagesContainer");
+    var elem = document.createElement("div");
+    elem.id = "rightChatSectionHeader";
+    elem.innerHTML = name;
+    container.appendChild(elem)
 }

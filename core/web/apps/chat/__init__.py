@@ -11,7 +11,7 @@ from core.web import longpoll
 THIS_APP = sys.modules[__name__]
 ENC = 'utf-8'
 MAX_TIMEOUT = 120
-MIN_TIMEOUT = 5
+MIN_TIMEOUT = 1
 
 
 def activate(args):
@@ -21,6 +21,9 @@ def activate(args):
     response = {
         'headers': [('Connection', 'close')]
     }
+    if args['user'] is None:
+        response['code'] = HTTPStatus.FORBIDDEN
+        return response
     try:
         action = getattr(THIS_APP, action)
     except AttributeError:
@@ -48,26 +51,82 @@ def getonlineusr(args, response):
     data['online'] = [{'uid': usr[0], 'name': usr[1]} for usr in dbresp.data]
     return data
 
+
 def accept(args, response):
     params = parse.parse_qs(args.get('params', ''))
-    timeout = params.get('timeout', [MAX_TIMEOUT]).pop()
+    timeout = int(params.get('timeout', [MAX_TIMEOUT]).pop())
     timeout = timeout if timeout <= MAX_TIMEOUT else MAX_TIMEOUT
     timeout = timeout if timeout >= MIN_TIMEOUT else MIN_TIMEOUT
 
     user = args['user']
-    if user is not None:
-        uid = user['uid']
-        def get_new_chnls():
-            resp = db.DBClient.send('FINDCHNL', {'uid': uid, 'status': 'REQ'})
-            if resp.code.name == 'OK' and resp.data:
-                return resp.data
+    uid = user['uid']
+    def get_new_chnls():
+        resp = db.DBClient.send('FINDCHNLBYTGT', {'uid': uid, 'status': 'REQ'})
+        if resp.code.name == 'OK' and resp.data:
+            return resp.data
 
-        new_chnls = longpoll.wait(get_new_chnls,
-                                  test=lambda x: x is not None,
-                                  timeout=timeout,
-                                  default=[])
-        data = {'accepted': new_chnls}
-        return data
-    else:
-        response['code'] = HTTPStatus.FORBIDDEN
+    new_chnls = longpoll.wait(get_new_chnls,
+                              test=lambda x: x is not None,
+                              timeout=timeout,
+                              default=[],
+                              polling_time=1)
+    data = {'accepted': new_chnls}
+    return data
+
+
+def request(args, response):
+    params = parse.parse_qs(args.get('params', ''))
+    timeout = int(params.get('timeout', [MAX_TIMEOUT]).pop())
+    timeout = timeout if timeout <= MAX_TIMEOUT else MAX_TIMEOUT
+    timeout = timeout if timeout >= MIN_TIMEOUT else MIN_TIMEOUT
+
+    target_id = int(params['uid'].pop())
+    user = args['user']
+    dbresp = db.DBClient.send('CREATECHNL', {'initiator': user['uid'],
+                                             'target': target_id,
+                                             'status': 'REQ'})
+    if dbresp.code.name == 'FAIL':
+        return {'answer': 'error'}
+
+    chid = dbresp.data['chid']
+    def get_answer():
+        dbresp = db.DBClient.send('GETCHNL', {'chid': chid})
+        if dbresp.code.name == 'OK':
+            return dbresp.data
+
+    chnl = longpoll.wait(get_answer,
+                         test=lambda x: x['status'] != 'REQ',
+                         timeout=timeout,
+                         default=None,
+                         polling_time=1)
+
+    if chnl is None:
+        db.DBClient.send('DROPCHNL', {'chid': chid})
+        return {'answer': 'timeout'}
+    elif chnl['status'] == 'DIS':
+        db.DBClient.send('DROPCHNL', {'chid': chid})
+        return {'answer': 'dismissed'}
+    elif chnl['status'] == 'ACC':
+        db.DBClient.send('CHANGECHNLSTATUS', {'chid': chid, 'status': 'RUN'})
+        return {'answer': 'accepted', 'channel': chnl}
+    return {'answer': 'error'}
+
+
+def dismiss(args, response):
+    params = parse.parse_qs(args.get('params', ''))
+    chid = params.get('chid', [None]).pop()
+    if chid is None:
+        response['code'] = HTTPStatus.BAD_REQUEST
         return
+    dbresp = db.DBClient.send('CHANGECHNLSTATUS', {'chid': chid, 'status': 'DIS'})
+    return {}
+
+
+def prove(args, response):
+    params = parse.parse_qs(args.get('params', ''))
+    chid = params.get('chid', [None]).pop()
+    if chid is None:
+        response['code'] = HTTPStatus.BAD_REQUEST
+        return
+    dbresp = db.DBClient.send('CHANGECHNLSTATUS', {'chid': chid, 'status': 'ACC'})
+    return {}

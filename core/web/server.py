@@ -1,8 +1,10 @@
 import ssl
+import json
 from socketserver import ThreadingMixIn
 from http.server import HTTPServer
 from core.web import db
 from core.web import view
+from core.web import user
 from core.web.handler import WebHandler
 
 
@@ -25,6 +27,16 @@ class WebServer:
 
         view.load_model(config['www_dir'])
         self.logger.debug('Page model loaded')
+
+        scheme = 'https' if config['use_tls'] else 'http'
+        host = scheme + '://' + self.host
+        if self.port not in (80, 443):
+            host = host + ':' + str(self.port)
+        email = config['email']
+        account = json.loads(open(email['account'], 'r', encoding='utf-8').read())
+        user.register_verificator(host, email['mailhost'],
+            email['port'], account['address'], account['password'])
+        self.logger.debug('Verificator mailbox loaded')
 
         WebHandler.logger = self.logger
         self.server = ServerClass((self.host, self.port), WebHandler)

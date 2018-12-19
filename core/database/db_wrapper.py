@@ -116,13 +116,25 @@ class DBWrapper:
         #
         if self.users.contains(Query()['name'] == params['name']):
             return db_proto.Response(code=DBRespCode.FAIL)  # Name must be unique
+        token = create_unique_token([])
         doc_id = self.users.insert({'name': params['name'],
+                                    'email': params['email'],
+                                    'verified': False,
+                                    'verify_token': token,
                                     'registerDate': time.ctime()})
         uid = SEED + doc_id
         self.users.update({'uid': uid}, doc_ids=[doc_id])
         self.private.insert({'uid': uid,
                              'passwd': params['passwd']})
-        return db_proto.Response(code=DBRespCode.OK, data={'uid': uid})
+        return db_proto.Response(code=DBRespCode.OK, data={'uid': uid, 'verify_token': token})
+
+    def USRVERIFIED(self, params):
+        usr = self.users.get(Query()['uid'] == params['uid'])
+        if usr is None:
+            return db_proto.Response(code=DBRespCode.FAIL)
+        self.users.update({'verified': True}, doc_ids=[usr.doc_id])
+        self.users.update(delete('verify_token'), doc_ids=[usr.doc_id])
+        return db_proto.Response(code=DBRespCode.OK)
 
     def GETUSRBYID(self, params):
         # Returns user info for given uid

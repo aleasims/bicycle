@@ -19,8 +19,15 @@ function registerUser() {
     }
     var passwd = regform.passwd.value;
     var passwd_rep = regform.passwd_rep.value;
-    if (!validPasswd(passwd, passwd_rep, approvement)) {
+    if (!validPasswd(passwd, approvement)) {
         regform.passwd.value = regform.passwd.defaultValue;
+        regform.passwd_rep.value = regform.passwd_rep.defaultValue;
+        return;
+    }
+    if (passwd !== passwd_rep) {
+        approvement.innerHTML = "Passwords do not match";
+        regform.passwd.value = regform.passwd.defaultValue;
+        regform.passwd_rep.value = regform.passwd_rep.defaultValue;
         return;
     }
 
@@ -113,6 +120,9 @@ function logIn() {
                         case "Session not created":
                             approvement.innerHTML = "Something went wrong, try again";
                             logform.reset();
+                        case "Not verified":
+                            approvement.innerHTML = "Verify your email";
+                            logform.reset();
                     }
                 }
             } else {
@@ -149,7 +159,7 @@ function validName(name, approvement) {
     return true;
 }
 
-function validPasswd(passwd, passwd_rep, approvement) {
+function validPasswd(passwd, approvement) {
     if (passwd.length > 30) {
         approvement.innerHTML = "Too long password";
         return false;
@@ -160,10 +170,6 @@ function validPasswd(passwd, passwd_rep, approvement) {
     }
     if (passwd.length < 6) {
         approvement.innerHTML = "Password must consist of not less than 6 symbols";
-        return false;
-    }
-    if (passwd !== passwd_rep) {
-        approvement.innerHTML = "Passwords do not match";
         return false;
     }
     return true;

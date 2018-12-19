@@ -26,6 +26,8 @@
       sendMessage();
     }
   });
-  updateOnlineUsers(10000);
-  acceptChannelRequest();
+  var period = 10000;
+  updateOnlineUsers(period);
+  var await_time = 1000;
+  acceptChannelRequest(await_time);
 </script>

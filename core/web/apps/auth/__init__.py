@@ -58,6 +58,9 @@ def login(args, response):
     if uid is None:
         return {'status': 'FAILED', 'msg': 'Identification failed'}
 
+    if not user.verified(uid):
+        return {'status': 'FAILED', 'msg': 'Not verified'}
+
     if not user.authenticate(uid, passwd):
         return {'status': 'FAILED', 'msg': 'Authentication failed'}
 

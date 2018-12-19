@@ -116,13 +116,25 @@ class DBWrapper:
         #
         if self.users.contains(Query()['name'] == params['name']):
             return db_proto.Response(code=DBRespCode.FAIL)  # Name must be unique
+        token = create_unique_token([])
         doc_id = self.users.insert({'name': params['name'],
+                                    'email': params['email'],
+                                    'verified': False,
+                                    'verify_token': token,
                                     'registerDate': time.ctime()})
         uid = SEED + doc_id
         self.users.update({'uid': uid}, doc_ids=[doc_id])
         self.private.insert({'uid': uid,
                              'passwd': params['passwd']})
-        return db_proto.Response(code=DBRespCode.OK, data={'uid': uid})
+        return db_proto.Response(code=DBRespCode.OK, data={'uid': uid, 'verify_token': token})
+
+    def USRVERIFIED(self, params):
+        usr = self.users.get(Query()['uid'] == params['uid'])
+        if usr is None:
+            return db_proto.Response(code=DBRespCode.FAIL)
+        self.users.update({'verified': True}, doc_ids=[usr.doc_id])
+        self.users.update(delete('verify_token'), doc_ids=[usr.doc_id])
+        return db_proto.Response(code=DBRespCode.OK)
 
     def GETUSRBYID(self, params):
         # Returns user info for given uid
@@ -170,22 +182,19 @@ class DBWrapper:
         record = self.private.get(Query()['uid'] == params['uid'])
         if params['passwd'] == record['passwd']:
             self.private.remove(doc_ids=[record.doc_id])
-            self.users.remove(doc_ids=[params['uid']])
+            self.users.remove(Query()['uid'] == [params['uid']])
             return db_proto.Response(code=DBRespCode.OK)
         return db_proto.Response(code=DBRespCode.FAIL)
 
 # CHANNELS
     def CREATECHNL(self, params):
-        uids = params['uids']
-        if len(uids) != 2:
-            return db_proto.Response(code=DBRespCode.FAIL,
-                                     data={'msg': 'Invalid params'})
-        if uids[0] == uids[1]:
+        target, initiator = params['target'], params['initiator']
+        if target == initiator:
             return db_proto.Response(code=DBRespCode.FAIL,
                                      data={'msg': 'Users must be different'})
         users = []
-        for uid in uids:
-            usr = self.users.get(doc_id=uid)
+        for uid in target, initiator:
+            usr = self.users.get(Query()['uid'] == uid)
             if usr is None:
                 return db_proto.Response(code=DBRespCode.FAIL,
                                          data={'msg': 'User not found'})
@@ -195,11 +204,20 @@ class DBWrapper:
 
         self.channels.insert({'chid': chid,
                               'status': params['status'],
-                              'users': users,
+                              'target': users[0],
+                              'initiator': users[1],
                               'buffer': {
-                                    uids[0]: [],
-                                    uids[1]: []}})
+                                    params['target']: [],
+                                    params['initiator']: []}})
         return db_proto.Response(code=DBRespCode.OK, data={'chid': chid})
+
+    def GETCHNL(self, params):
+        chid = params['chid']
+        chnl = self.channels.get(Query()['chid'] == chid)
+        if chnl is None:
+            return db_proto.Response(code=DBRespCode.FAIL,
+                                     data={'msg': 'Channel not found'})
+        return db_proto.Response(code=DBRespCode.OK, data=chnl)
 
     def CHANGECHNLSTATUS(self, params):
         chid = params['chid']
@@ -211,14 +229,18 @@ class DBWrapper:
                              Query()['chid'] == chid)
         return db_proto.Response(code=DBRespCode.OK)
 
-    def FINDCHNL(self, params):
+    def FINDCHNLBYTGT(self, params):
         uid = params['uid']
         status = params.get('status')
-        Chnl = Query()
-        def contains(users):
-            return uid in [user['uid'] for user in users]
         if status is not None:
-            chnls = self.channels.search(Chnl['users'].test(contains) & (Chnl['status'] == status))
+            chnls = self.channels.search((Query()['target']['uid'] == uid) & (Query()['status'] == status))
         else:
-            chnls = self.channels.search(Chnl['users'].test(contains))
+            chnls = self.channels.search(Query()['target']['uid'] == uid)
         return db_proto.Response(code=DBRespCode.OK, data=chnls)
+
+    def DROPCHNL(self, params):
+        chid = params['chid']
+        chnl = self.channels.get(Query()['chid'] == chid)
+        if chnl is not None:
+            self.channels.remove(doc_ids=[chnl.doc_id])
+        return db_proto.Response(code=DBRespCode.OK)

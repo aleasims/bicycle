@@ -6,14 +6,28 @@ function registerUser() {
     var regform = document.getElementById("regForm");
     var approvement = document.getElementById("approvement")
 
+    var email = regform.email.value;
+    if (!validEmail(email, approvement)) {
+        regform.reset();
+        return;
+    }
+
     var nickname = regform.nickname.value;
     if (!validName(nickname, approvement)) {
         regform.reset();
         return;
     }
     var passwd = regform.passwd.value;
+    var passwd_rep = regform.passwd_rep.value;
     if (!validPasswd(passwd, approvement)) {
         regform.passwd.value = regform.passwd.defaultValue;
+        regform.passwd_rep.value = regform.passwd_rep.defaultValue;
+        return;
+    }
+    if (passwd !== passwd_rep) {
+        approvement.innerHTML = "Passwords do not match";
+        regform.passwd.value = regform.passwd.defaultValue;
+        regform.passwd_rep.value = regform.passwd_rep.defaultValue;
         return;
     }
 
@@ -29,7 +43,7 @@ function registerUser() {
                 }
                 if (response.status === 'SUCCESSFUL') {
                     approvement.innerHTML = "You are registered succesfully! " +
-                        "You can <a href=\"/\">log in</a> now.";
+                        "Email verification message has been sent to your email.";
                     document.getElementById("regformContainer").style.display = "none";
                 } else if (response.status === 'NAME_TAKEN') {
                     approvement.innerHTML = "This nickname is already taken, try different nickname";
@@ -45,7 +59,7 @@ function registerUser() {
         }
     };
     var passwd_hash = hex_md5(passwd);
-    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}`, true);
+    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}&email=${email}`, true);
     xhttp.send();
 }
 
@@ -106,6 +120,9 @@ function logIn() {
                         case "Session not created":
                             approvement.innerHTML = "Something went wrong, try again";
                             logform.reset();
+                        case "Not verified":
+                            approvement.innerHTML = "Verify your email";
+                            logform.reset();
                     }
                 }
             } else {
@@ -119,6 +136,16 @@ function logIn() {
     xhttp.open("GET", `/app/auth?name=${nickname}&pwd=${passwd_hash}`, true);
     xhttp.send();
 };
+
+function validEmail(email, approvement) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    valid = re.test(String(email).toLowerCase());
+    if (!valid) {
+        approvement.innerHTML = "Invalid email";
+        return false;
+    }
+    return true;
+}
 
 function validName(name, approvement) {
     if (!name.match(/^[\w]+$/)) {

@@ -6,13 +6,20 @@ function registerUser() {
     var regform = document.getElementById("regForm");
     var approvement = document.getElementById("approvement")
 
+    var email = regform.email.value;
+    if (!validEmail(email, approvement)) {
+        regform.reset();
+        return;
+    }
+
     var nickname = regform.nickname.value;
     if (!validName(nickname, approvement)) {
         regform.reset();
         return;
     }
     var passwd = regform.passwd.value;
-    if (!validPasswd(passwd, approvement)) {
+    var passwd_rep = regform.passwd_rep.value;
+    if (!validPasswd(passwd, passwd_rep, approvement)) {
         regform.passwd.value = regform.passwd.defaultValue;
         return;
     }
@@ -29,7 +36,7 @@ function registerUser() {
                 }
                 if (response.status === 'SUCCESSFUL') {
                     approvement.innerHTML = "You are registered succesfully! " +
-                        "You can <a href=\"/\">log in</a> now.";
+                        "Email verification message has been sent to your email.";
                     document.getElementById("regformContainer").style.display = "none";
                 } else if (response.status === 'NAME_TAKEN') {
                     approvement.innerHTML = "This nickname is already taken, try different nickname";
@@ -45,7 +52,7 @@ function registerUser() {
         }
     };
     var passwd_hash = hex_md5(passwd);
-    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}`, true);
+    xhttp.open("GET", `/app/register?name=${nickname}&pwd=${passwd_hash}&email=${email}`, true);
     xhttp.send();
 }
 
@@ -120,6 +127,16 @@ function logIn() {
     xhttp.send();
 };
 
+function validEmail(email, approvement) {
+    var re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    valid = re.test(String(email).toLowerCase());
+    if (!valid) {
+        approvement.innerHTML = "Invalid email";
+        return false;
+    }
+    return true;
+}
+
 function validName(name, approvement) {
     if (!name.match(/^[\w]+$/)) {
         approvement.innerHTML = "Nickname must consist of a-z,A-Z,0-9 (6-15 symbols)"
@@ -132,7 +149,7 @@ function validName(name, approvement) {
     return true;
 }
 
-function validPasswd(passwd, approvement) {
+function validPasswd(passwd, passwd_rep, approvement) {
     if (passwd.length > 30) {
         approvement.innerHTML = "Too long password";
         return false;
@@ -143,6 +160,10 @@ function validPasswd(passwd, approvement) {
     }
     if (passwd.length < 6) {
         approvement.innerHTML = "Password must consist of not less than 6 symbols";
+        return false;
+    }
+    if (passwd !== passwd_rep) {
+        approvement.innerHTML = "Passwords do not match";
         return false;
     }
     return true;

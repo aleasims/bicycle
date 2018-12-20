@@ -30,8 +30,6 @@ class WebServer:
 
         scheme = 'https' if config['use_tls'] else 'http'
         host = scheme + '://' + config['domain']
-        if self.port not in (80, 443):
-            host = host + ':' + str(self.port)
         email = config['email']
         account = json.loads(open(email['account'], 'r', encoding='utf-8').read())
         user.register_verificator(host, email['mailhost'],

@@ -2,7 +2,6 @@ import os
 import io
 import time
 import sys
-import bs4
 import importlib
 import traceback
 import urllib.parse

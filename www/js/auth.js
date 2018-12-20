@@ -71,6 +71,8 @@ function logOut() {
                 var response = JSON.parse(this.responseText)
                 if (response.status === 'SUCCESSFUL') {
                     logged = false;
+                    window.localStorage.removeItem('bc_uid');
+                    window.localStorage.removeItem('bc_name');
                 } else {
                     logged = true;
                 }
@@ -108,6 +110,8 @@ function logIn() {
                 if (response.status === "SUCCESSFUL") {
                     approvement.innerHTML = "You are logged in!";
                     logged = true;
+                    window.localStorage.setItem('bc_uid', response['user']['uid']);
+                    window.localStorage.setItem('bc_name', response['user']['name']);
                     setTimeout(() => {window.location.reload()}, 100);
                 } else {
                     switch (response.msg) {

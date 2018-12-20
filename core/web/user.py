@@ -27,6 +27,12 @@ def register_verificator(host, mailhost, port, address, password):
     WEBHOST = host
 
 
+def get(uid):
+    dbresp = db.DBClient.send('GETUSRBYID', {'uid': uid})
+    if dbresp.code.name == 'OK':
+        return dbresp.data
+
+
 def create(name, passwd, email):
     if db.DBClient.send('GETIDBYNAME', {'name': name}).code.name == 'OK':
         return 'NAME_TAKEN',

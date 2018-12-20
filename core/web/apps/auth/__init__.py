@@ -70,7 +70,7 @@ def login(args, response):
 
     response['headers'].append(('Set-Cookie', '{}={}; path=/; Max-Age={}; SameSite=Lax; HttpOnly'.format(
                                 session.SESS_KEY, ssid, session.SESS_EXP_TIME)))
-    return {'status': 'SUCCESSFUL'}
+    return {'status': 'SUCCESSFUL', 'user': user.get(uid)}
 
 
 def logout(args, response):

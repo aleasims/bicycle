@@ -238,6 +238,9 @@ class DBWrapper:
             chnls = self.channels.search(Query()['target']['uid'] == uid)
         return db_proto.Response(code=DBRespCode.OK, data=chnls)
 
+    def SENDMSG(self, params):
+        uid = params['uid']
+
     def DROPCHNL(self, params):
         chid = params['chid']
         chnl = self.channels.get(Query()['chid'] == chid)

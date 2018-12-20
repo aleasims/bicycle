@@ -29,7 +29,7 @@ class WebServer:
         self.logger.debug('Page model loaded')
 
         scheme = 'https' if config['use_tls'] else 'http'
-        host = scheme + '://' + self.host
+        host = scheme + '://' + config['domain']
         if self.port not in (80, 443):
             host = host + ':' + str(self.port)
         email = config['email']

@@ -1,6 +1,7 @@
 {
 	"name": "WebServer",
-	"host": "192.168.1.44",
+	"host": "localhost",
+	"domain": "platypuses.servebeer.com",
 	"port": 8080,
 	"www_dir": "/home/alea/bicycle/www",
 	"db_address": "/tmp/bc_ipc",

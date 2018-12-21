@@ -1,8 +1,8 @@
 #!/bin/bash
-ENV=false
+ENV=true
 if [ "$1" = "-e" ]
 then
-	ENV=true
+	ENV=false
 fi
 
 
@@ -20,5 +20,6 @@ then
 	source env/bin/activate	
 fi
 
+pip install tinydb
 
-$PYTHON bicycle.py
+python bicycle.py

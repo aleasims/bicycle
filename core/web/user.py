@@ -7,6 +7,9 @@ from email.mime.text import MIMEText
 SMTPServer = None
 HOMEADDR = None
 WEBHOST = None
+MAILHOST = None
+PORT = None
+PWD = None
 
 VERIFY_MAIL_SUBJ = 'Bicycle account verification'
 VERIFY_MAIL_BODY = '''
@@ -18,13 +21,16 @@ Here is you link to verify account:
 
 
 def register_verificator(host, mailhost, port, address, password):
-    global SMTPServer, HOMEADDR, WEBHOST
+    global SMTPServer, HOMEADDR, WEBHOST, MAILHOST, PORT, PWD
     SMTPServer = smtplib.SMTP(mailhost, 587)
     SMTPServer.ehlo()
     SMTPServer.starttls()
     SMTPServer.login(address, password)
     HOMEADDR = address
     WEBHOST = host
+    MAILHOST = mailhost
+    PORT = port
+    PWD = password
 
 
 def create(name, passwd, email):
@@ -55,6 +61,7 @@ def send_token(uid, email, token):
     msg['Subject'] = VERIFY_MAIL_SUBJ
     body = MIMEText(VERIFY_MAIL_BODY % {'host': WEBHOST, 'uid': uid, 'token': token}, 'plain')
     msg.attach(body)
+    register_verificator(WEBHOST, MAILHOST, PORT, HOMEADDR, PWD)
     SMTPServer.sendmail(HOMEADDR, email, msg.as_string())
 
 def verify(uid, token):

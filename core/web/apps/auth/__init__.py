@@ -1,125 +1,86 @@
 import sys
+import json
+from io import BytesIO
 from urllib import parse
 from http import HTTPStatus
-from core.web.apps.common import extract_ssid
-from core.database.db_client import DBClient
-from core.database import db_proto
+from core.web import session
+from core.web import user
 
 
-CHECKOUT_TIME = 600
+CHECKOUT_TIME = 300
+ENC = 'utf-8'
 DEFAULT_ACTION = 'login'
-db_cli = DBClient('/tmp/bc_ipc')
-app = sys.modules[__name__]
+THIS_APP = sys.modules[__name__]
 
 
 def activate(args):
     params = parse.parse_qs(args['params'])
-    action = params.get('action')
-    if not action:
-        action = [DEFAULT_ACTION]
+    action = params.get('action', [None]).pop()
+    if action is None:
+        action = DEFAULT_ACTION
 
+    response = {
+        'headers': [('Connection', 'close')]
+    }
     try:
-        action = getattr(app, action[-1])
+        action = getattr(THIS_APP, action)
     except AttributeError:
-        return {'code': HTTPStatus.NOT_IMPLEMENTED}
+        response['code'] = HTTPStatus.NOT_IMPLEMENTED
     else:
-        return action(args)
+        data = action(args, response)
+        if data:
+            response['code'] = HTTPStatus.OK
+            data = json.dumps(data)
+            response['headers'].append(('Content-type', 'application/json;charset={}'.format(ENC)))
+            response['headers'].append(('Content-length', str(len(data))))
+            response['data'] = BytesIO(bytes(data, ENC))
+    finally:
+        return response
 
 
-def login(args):
+def login(args, response):
     # Handling login requests
     #
     # Reqeust example:
     # GET /app/auth?name=Sasha&pwd=sdjcn23jnd322jdjkn
     # or (same):
-    # GET /app/auth?action=authorize&name=Sasha&pwd=sdjcn23jnd322jdjkn
+    # GET /app/auth?action=login&name=Sasha&pwd=sdjcn23jnd322jdjkn
 
     # Get nickname and pwd
     params = parse.parse_qs(args.get('params', ''))
     name = params.get('name', [None])[-1]
     passwd = params.get('pwd', [None])[-1]
     if name is None or passwd is None:
-        return {'code': HTTPStatus.BAD_REQUEST}
+        response['code'] = HTTPStatus.BAD_REQUEST
+        return {}
 
-    response = {
-        'code': HTTPStatus.OK,
-        'headers': []
-    }
+    uid = user.identify(name)
+    if uid is None:
+        return {'status': 'FAILED', 'msg': 'Identification failed'}
 
-    # Identification
-    identify = db_proto.Request(method='CHECKUSR',
-                                params={'name': name})
-    if db_cli.send(identify).code != db_proto.DBRespCode.OK:
-        response['headers'].append(('X-Auth-status', 'Identification failed'))
-        return response
+    if not user.verified(uid):
+        return {'status': 'FAILED', 'msg': 'Not verified'}
 
-    # Authentication
-    auth = db_proto.Request(method='CHECKPWD',
-                            params={'name': name,
-                                    'passwd': passwd})
-    if db_cli.send(auth).code != db_proto.DBRespCode.OK:
-        response['headers'].append(('X-Auth-status', 'Authentication failed'))
-        return response
+    if not user.authenticate(uid, passwd):
+        return {'status': 'FAILED', 'msg': 'Authentication failed'}
 
-    # Change user status to `online`
-    mkonline = db_proto.Request(method='USRON',
-                                params={'name': name,
-                                        'client_ip': args['client'][0]})
-    db_response = db_cli.send(mkonline)
-    if db_response.code == db_proto.DBRespCode.OK:
-        ssid = db_response.data[0]
-        response['headers'].append(('X-Auth-status', 'OK'))
-        response['headers'].append(('Set-Cookie', 'SSID={}; Max-Age={}; HttpOnly'.format(
-            ssid, CHECKOUT_TIME)))
-    else:
-        response['headers'].append(('X-Auth-status', 'Status failed'))
-    return response
+    ssid = session.create(uid)
+    if ssid is None:
+        return {'status': 'FAILED', 'msg': 'Session not created'}
+
+    response['headers'].append(('Set-Cookie', '{}={}; path=/; Max-Age={}; SameSite=Lax; HttpOnly'.format(
+                                session.SESS_KEY, ssid, session.SESS_EXP_TIME)))
+    return {'status': 'SUCCESSFUL'}
 
 
-def checkssid(args):
-    # Check if client has valid SSID
-    #
-    # Request example:
-    # GET /app/auth?action=checkssid
-
-    response = {
-        'code': HTTPStatus.OK,
-        'headers': []
-    }
-
-    ssid = extract_ssid(args)
-    if ssid:
-        cookiecheck = db_proto.Request(method='CHECKSSID',
-                                       params={'ssid': ssid.value,
-                                               'client_ip': args['client'][0]})
-        resp = db_cli.send(cookiecheck)
-        if resp.code == db_proto.DBRespCode.OK:
-            response['headers'].append(('X-SSID-approvement', 'OK'))
-            response['headers'].append(('Set-Cookie', 'SSID={}; Max-Age={}'.format(
-                ssid.value, CHECKOUT_TIME)))
-            response['headers'].append(('Set-Cookie', 'nickname={}; Max-Age={}'.format(
-                resp.data[0], CHECKOUT_TIME)))
-        else:
-            response['headers'].append(('X-SSID-approvement', 'Invalid'))
-    else:
-        response['headers'].append(('X-SSID-approvement', 'Not Found'))
-    return response
-
-
-def logout(args):
+def logout(args, response):
     # Handling log out requests
     #
     # Request example:
     # GET /app/auth?action=logout
 
-    ssid = extract_ssid(args)
-    if ssid:
-        off_user = db_proto.Request(method='USROFF', params={'ssid': ssid.value})
-        if db_cli.send(off_user) == db_proto.DBRespCode.OK:
-            return {'code': HTTPStatus.OK,
-                    'headers': [('X-Auth-status', 'OUT')]}
-        else:
-            return {'code': HTTPStatus.OK,
-                    'headers': [('X-Auth-status', 'Logging out failed')]}
-    return {'code': HTTPStatus.OK,
-            'headers': [('X-Auth-status', 'OUT')]}
+    user = args['user']
+    if user is not None:
+        if not session.drop(user['ssid']):
+            return {'status': 'FAILED'}
+    return {'status': 'SUCCESSFUL'}

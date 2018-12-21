@@ -1,7 +1,16 @@
 {
 	"name": "WebServer",
-	"version": "0.1b",
-	"host": "",
+	"host": "localhost",
+	"domain": "platypuses.servebeer.com",
 	"port": 8080,
-	"www_dir": "/home/alea/bicycle/www"
+	"www_dir": "/home/alea/bicycle/www",
+	"db_address": "/tmp/bc_ipc",
+	"use_tls": false,
+	"certificate": "",
+	"keyfile": "",
+	"email": {
+		"mailhost": "smtp.gmail.com",
+		"port": 587,
+		"account": "/home/alea/bicycle_email.json"
+	}
 }

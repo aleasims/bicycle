@@ -3,6 +3,7 @@
 	"host": "localhost",
 	"domain": "platypuses.servebeer.com",
 	"port": 8080,
+	"second_port": 8080,
 	"www_dir": "/home/alea/bicycle/www",
 	"db_address": "/tmp/bc_ipc",
 	"use_tls": false,
